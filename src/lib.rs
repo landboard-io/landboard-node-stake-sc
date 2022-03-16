@@ -136,7 +136,7 @@ pub trait LandboardStaking: storage::StorageModule{
 
         // if it's before locking_timestamp, charge tax to reward
         if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
-            reward_amount *= &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
 
             return (false, reward_amount);
         }

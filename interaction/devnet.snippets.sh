@@ -79,7 +79,7 @@ unstake2() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="unstake" \
-    --arguments 2 \
+    --arguments 1 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
