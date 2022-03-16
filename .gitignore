@@ -7,3 +7,5 @@
 output*
 
 /wallets/
+deploy-devnet.interaction.json
+erdpy.data-storage.json

@@ -31,6 +31,8 @@ pub trait LandboardStaking: storage::StorageModule{
     #[payable("*")]
     #[endpoint]
     fn stake(&self, #[payment_token] payment_token_id: TokenIdentifier, #[payment_amount] payment_amount: BigUint, stake_type_id: usize) {
+        self.require_activation();
+        
         require!(
             payment_token_id == self.stake_token_id().get(),
             "invalid payment_token_id"
@@ -69,6 +71,8 @@ pub trait LandboardStaking: storage::StorageModule{
 
     #[endpoint]
     fn unstake(&self, node_id: usize) {
+        self.require_activation();
+
         let caller = self.blockchain().get_caller();
 
         require!(
@@ -142,6 +146,13 @@ pub trait LandboardStaking: storage::StorageModule{
     #[inline]
     fn calculate_reward(&self, base_amount: BigUint, roi: u32) -> BigUint {
         base_amount * &BigUint::from(roi) / &BigUint::from(TOTAL_PERCENTAGE)
+    }
+
+    fn require_activation(&self) {
+        require!(
+            !self.paused().get(),
+            "staking is paused"
+        );
     }
 
     /// view
