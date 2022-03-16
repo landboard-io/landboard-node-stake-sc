@@ -5,10 +5,15 @@ CHAIN_ID="D"
 WALLET="./wallets/test-wallet.pem"
 WALLET2="./wallets/test-wallet-2.pem"
 
+CALLER_ADDRESS="erd1dl8ucerztz80eqtvs2u35vj5pckle3h3mnuce5fctyzxp4d74dfqwy7ntn"
+CALLER_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
+
 TOKEN_ID="SVEN-4b35b0"
 TOKEN_ID_HEX="0x$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
+TOKEN_ID_ONLY_HEX="$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 
-
+STAKE="stake"
+STAKE_ONLY_HEX="$(echo -n ${STAKE} | xxd -p -u | tr -d '\n')"
 
 #####
 ADDRESS=$(erdpy data load --key=address-devnet)
@@ -35,32 +40,46 @@ deploy() {
     erdpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
 }
 
-makeOffer() {
+addStakeTypes() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="addStakeTypes" \
+    --arguments 1 100000000000000000000 5000 5000 30 100000000000000000000 5000 10000 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+stake() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
-    --data="ESDTTransfer@${OFFER_TOKEN_ID_ONLY_HEX}@${OFFER_TOKEN_AMOUNT_ONLY_HEX}@${MAKE_OFFER_ONLY_HEX}@${ACCEPT_TOKEN_ID_ONLY_HEX}@${ACCEPT_TOKEN_AMOUNT_ONLY_HEX}" \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
-cancelOffer() {
+unstake() {
     erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
-    --function="cancelOffer" \
-    --argument 1 \
+    --function="unstake" \
+    --arguments 1 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
-OFFER_TOKEN_ID_HEX="0x$(echo -n ${OFFER_TOKEN_ID} | xxd -p -u | tr -d '\n')"
-
-acceptOffer() {
-    erdpy --verbose contract call ${ADDRESS} \
-    --recall-nonce --pem=${WALLET2} \
+stake2() {
+    erdpy --verbose tx new --receiver ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
-    --function="acceptOffer" \
-    --value ${ACCEPT_TOKEN_AMOUNT} \
-    --argument 1 ${OFFER_TOKEN_ID_HEX} ${OFFER_TOKEN_AMOUNT} \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@02" \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+unstake2() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="unstake" \
+    --arguments 2 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -74,14 +93,26 @@ withdraw() {
 
 # config
 
-getOfferIds() {
-    erdpy --verbose contract query ${ADDRESS} --function="getOfferIds" --proxy=${PROXY}
+getStakeTypes() {
+    erdpy --verbose contract query ${ADDRESS} --function="getStakeTypes" --proxy=${PROXY}
 }
 
-getOffers() {
-    erdpy --verbose contract query ${ADDRESS} --function="getOffers" --proxy=${PROXY}
+getStakerAddresses() {
+    erdpy --verbose contract query ${ADDRESS} --function="getStakerAddresses" --proxy=${PROXY}
 }
 
-getOffer() {
-    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getOffer" --argument 1
+getLastNodeId() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getLastNodeId" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getNodeIds() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getLastNodeId" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getNodesPerStaker() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getNodesPerStaker" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getNode() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getNode" --arguments ${CALLER_ADDRESS_HEX} 1
 }

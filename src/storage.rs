@@ -41,8 +41,8 @@ pub trait StorageModule {
     }
 
     #[only_owner]
-    #[endpoint(setStakeTypes)]
-    fn set_stake_types(&self, #[var_args] stake_types: MultiValueEncoded<MultiValue4<u64, BigUint, u32, u32>>) {
+    #[endpoint(addStakeTypes)]
+    fn add_stake_types(&self, #[var_args] stake_types: MultiValueEncoded<MultiValue4<u64, BigUint, u32, u32>>) {
         for item in stake_types.into_iter() {
             let (locking_timestamp, min_stake_limit, tax, roi) = item.into_tuple();
 

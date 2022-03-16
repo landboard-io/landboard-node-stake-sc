@@ -32,7 +32,7 @@ pub trait LandboardStaking: storage::StorageModule{
     #[endpoint]
     fn stake(&self, #[payment_token] payment_token_id: TokenIdentifier, #[payment_amount] payment_amount: BigUint, stake_type_id: usize) {
         self.require_activation();
-        
+
         require!(
             payment_token_id == self.stake_token_id().get(),
             "invalid payment_token_id"
@@ -67,6 +67,7 @@ pub trait LandboardStaking: storage::StorageModule{
         };
 
         self.nodes(&caller, new_node_id).set(stake_node);
+        self.last_node_id(&caller).set(&new_node_id);
     }
 
     #[endpoint]

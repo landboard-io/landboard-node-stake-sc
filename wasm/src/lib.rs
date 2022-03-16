@@ -7,6 +7,7 @@
 elrond_wasm_node::wasm_endpoints! {
     landboard_node_stake
     (
+        addStakeTypes
         clearStakeTypes
         getLastNodeId
         getNode
@@ -20,7 +21,6 @@ elrond_wasm_node::wasm_endpoints! {
         pause
         setRewardTokenId
         setStakeTokenId
-        setStakeTypes
         stake
         unpause
         unstake
