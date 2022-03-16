@@ -11,9 +11,13 @@ elrond_wasm_node::wasm_endpoints! {
         getNode
         getNodeIds
         getPaused
+        getRewardTokenId
+        getStakeTokenId
         getStakeTypes
         getStakerAddresses
         pause
+        setRewardTokenId
+        setStakeTokenId
         setStakeTypes
         unpause
     )

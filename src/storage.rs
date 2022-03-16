@@ -4,10 +4,30 @@ elrond_wasm::derive_imports!();
 use crate::state::{StakeType, StakeNode};
 
 
-const MAX_TAX: u32 = 1000; // 10%
+const MAX_TAX: u32 = 10000; // 100%
 
 #[elrond_wasm::module]
 pub trait StorageModule {
+    #[only_owner]
+    #[endpoint(setStakeTokenId)]
+    fn set_stake_token_id(&self, stake_token_id: TokenIdentifier) {
+        require!(
+            stake_token_id.is_valid_esdt_identifier(),
+            "invalid stake_token_id"
+        );
+        self.stake_token_id().set(&stake_token_id);
+    }
+
+    #[only_owner]
+    #[endpoint(setRewardTokenId)]
+    fn set_reward_token_id(&self, reward_token_id: TokenIdentifier) {
+        require!(
+            reward_token_id.is_valid_esdt_identifier(),
+            "invalid reward_token_id"
+        );
+        self.reward_token_id().set(&reward_token_id);
+    }
+
     #[only_owner]
     #[endpoint(pause)]
     fn pause(&self) {
@@ -22,9 +42,9 @@ pub trait StorageModule {
 
     #[only_owner]
     #[endpoint(setStakeTypes)]
-    fn set_stake_types(&self, #[var_args] stake_types: MultiValueEncoded<MultiValue3<u64, BigUint, u32>>) {
+    fn set_stake_types(&self, #[var_args] stake_types: MultiValueEncoded<MultiValue4<u64, BigUint, u32, u32>>) {
         for item in stake_types.into_iter() {
-            let (locking_timestamp, min_stake_limit, tax) = item.into_tuple();
+            let (locking_timestamp, min_stake_limit, tax, roi) = item.into_tuple();
 
             require!(
                 tax <= MAX_TAX,
@@ -34,7 +54,8 @@ pub trait StorageModule {
             let new_stake_type = StakeType {
                 locking_timestamp,
                 min_stake_limit,
-                tax
+                tax,
+                roi
             };
             self.stake_types().push(&new_stake_type);
         }
@@ -48,6 +69,14 @@ pub trait StorageModule {
 
     ///////////////////////////////////////////////////////////
     
+    #[view(getStakeTokenId)]
+    #[storage_mapper("stake_token_id")]
+    fn stake_token_id(&self) -> SingleValueMapper<TokenIdentifier>;
+    
+    #[view(getRewardTokenId)]
+    #[storage_mapper("reward_token_id")]
+    fn reward_token_id(&self) -> SingleValueMapper<TokenIdentifier>;
+
     #[view(getPaused)]
     #[storage_mapper("paused")]
     fn paused(&self) -> SingleValueMapper<bool>;
