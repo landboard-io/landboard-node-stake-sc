@@ -22,6 +22,7 @@ elrond_wasm_node::wasm_endpoints! {
         setStakeTypes
         stake
         unpause
+        unstake
     )
 }
 

@@ -7,8 +7,9 @@ elrond_wasm::derive_imports!();
 mod state;
 mod storage;
 
-use crate::state::StakeType;
 use crate::state::StakeNode;
+
+const TOTAL_PERCENTAGE: u32 = 10000; // 100%
 
 #[elrond_wasm::derive::contract]
 pub trait LandboardStaking: storage::StorageModule{
@@ -64,5 +65,51 @@ pub trait LandboardStaking: storage::StorageModule{
         };
 
         self.nodes(&caller, new_node_id).set(stake_node);
+    }
+
+    #[endpoint]
+    fn unstake(&self, node_id: usize) {
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            self.node_ids(&caller).contains(&node_id),
+            "node_id does not exist"
+        );
+
+        let stake_node = self.nodes(&caller, node_id).get();
+        let stake_type = stake_node.stake_type;
+
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.roi);
+
+        // if it's before locking_timestamp, charge tax to reward
+        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
+            reward_amount *= &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+        }
+
+        let stake_amount = stake_node.stake_amount.clone();
+
+        require!(
+            stake_amount <= self.blockchain().get_sc_balance(&self.stake_token_id().get(), 0),
+            "not enough stake tokens in smart contract"
+        );
+        require!(
+            reward_amount <= self.blockchain().get_sc_balance(&self.reward_token_id().get(), 0),
+            "not enough reward tokens in smart contract"
+        );
+
+        // clear old storage
+        self.node_ids(&caller).remove(&node_id);
+        self.nodes(&caller, node_id).clear();
+        if self.node_ids(&caller).is_empty() {
+            self.staker_addresses().remove(&caller);
+        }
+
+        self.send().direct(&caller, &self.stake_token_id().get(), 0, &stake_amount, b"return staked tokens");
+        self.send().direct(&caller, &self.stake_token_id().get(), 0, &reward_amount, b"return reward tokens");
+    }
+
+    #[inline]
+    fn calculate_reward(&self, base_amount: BigUint, roi: u32) -> BigUint {
+        base_amount * &BigUint::from(roi) / &BigUint::from(TOTAL_PERCENTAGE)
     }
 }
