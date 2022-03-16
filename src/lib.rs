@@ -77,14 +77,7 @@ pub trait LandboardStaking: storage::StorageModule{
         );
 
         let stake_node = self.nodes(&caller, node_id).get();
-        let stake_type = stake_node.stake_type;
-
-        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.roi);
-
-        // if it's before locking_timestamp, charge tax to reward
-        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
-            reward_amount *= &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
-        }
+        let (_, reward_amount) = self.get_claimable_and_reward(&stake_node);
 
         let stake_amount = stake_node.stake_amount.clone();
 
@@ -108,8 +101,71 @@ pub trait LandboardStaking: storage::StorageModule{
         self.send().direct(&caller, &self.stake_token_id().get(), 0, &reward_amount, b"return reward tokens");
     }
 
+    #[only_owner]
+    #[endpoint(withdraw)]
+    fn withdraw(&self,
+        #[var_args] opt_token_id: OptionalValue<TokenIdentifier>,
+        #[var_args] opt_token_amount: OptionalValue<BigUint>) {
+        // if token_id is not given, set it to eGLD
+        let token_id = match opt_token_id {
+            OptionalValue::Some(v) => v,
+            OptionalValue::None => TokenIdentifier::egld()
+        };
+        // if token_amount is not given, set it to balance of SC - max value to withdraw
+        let token_amount = match opt_token_amount {
+            OptionalValue::Some(v) => v,
+            OptionalValue::None => self.blockchain().get_sc_balance(&token_id, 0)
+        };
+
+        self.send().direct(&self.blockchain().get_caller(), &token_id, 0, &token_amount, &[]);
+    }
+
+
+    /// private
+
+    #[inline]
+    fn get_claimable_and_reward(&self, stake_node: &StakeNode<Self::Api>) -> (bool, BigUint) {
+        let stake_type = &stake_node.stake_type;
+
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.roi);
+
+        // if it's before locking_timestamp, charge tax to reward
+        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
+            reward_amount *= &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+
+            return (false, reward_amount);
+        }
+
+        (true, reward_amount)
+    }
+
     #[inline]
     fn calculate_reward(&self, base_amount: BigUint, roi: u32) -> BigUint {
         base_amount * &BigUint::from(roi) / &BigUint::from(TOTAL_PERCENTAGE)
+    }
+
+    /// view
+    
+    #[view(getNodesPerStaker)]
+    fn get_nodes_per_staker(&self, staker_address: ManagedAddress) -> MultiValueEncoded<MultiValue6<usize, BigUint, u64, u64, bool, BigUint>> {
+        let mut items_vec = MultiValueEncoded::new();
+        for node_id in self.node_ids(&staker_address).iter() {
+            let stake_node = self.nodes(&staker_address, node_id).get();
+
+            let (claimable, reward_amount) = self.get_claimable_and_reward(&stake_node);
+
+            items_vec.push(
+                MultiValue6::from((
+                    stake_node.node_id,
+                    stake_node.stake_amount,
+                    stake_node.stake_timestamp,
+                    stake_node.stake_type.locking_timestamp,
+                    claimable,
+                    reward_amount
+                ))
+            );
+        }
+
+        items_vec
     }
 }

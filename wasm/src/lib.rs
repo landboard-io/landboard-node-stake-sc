@@ -11,6 +11,7 @@ elrond_wasm_node::wasm_endpoints! {
         getLastNodeId
         getNode
         getNodeIds
+        getNodesPerStaker
         getPaused
         getRewardTokenId
         getStakeTokenId
@@ -23,6 +24,7 @@ elrond_wasm_node::wasm_endpoints! {
         stake
         unpause
         unstake
+        withdraw
     )
 }
 
