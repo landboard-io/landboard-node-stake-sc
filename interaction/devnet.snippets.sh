@@ -106,7 +106,7 @@ getLastNodeId() {
 }
 
 getNodeIds() {
-    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getLastNodeId" --arguments ${CALLER_ADDRESS_HEX}
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getNodeIds" --arguments ${CALLER_ADDRESS_HEX}
 }
 
 getNodesPerStaker() {
