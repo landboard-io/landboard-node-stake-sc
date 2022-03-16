@@ -93,9 +93,13 @@ pub trait StorageModule {
 
     #[view(getNodeIds)]
     #[storage_mapper("node_ids")]
-    fn node_ids(&self, staker_address: &ManagedAddress) -> SetMapper<u32>;
+    fn node_ids(&self, staker_address: &ManagedAddress) -> SetMapper<usize>;
+
+    #[view(getLastNodeId)]
+    #[storage_mapper("last_node_id")]
+    fn last_node_id(&self, staker_address: &ManagedAddress) -> SingleValueMapper<usize>;
 
     #[view(getNode)]
     #[storage_mapper("nodes")]
-    fn nodes(&self, staker_address: &ManagedAddress, node_id: u32) -> SingleValueMapper<StakeNode<Self::Api>>;
+    fn nodes(&self, staker_address: &ManagedAddress, node_id: usize) -> SingleValueMapper<StakeNode<Self::Api>>;
 }

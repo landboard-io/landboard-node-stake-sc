@@ -12,6 +12,7 @@ pub struct StakeType<M: ManagedTypeApi> {
 
 #[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone)]
 pub struct StakeNode<M: ManagedTypeApi> {
+    pub node_id: usize,
     pub stake_type: StakeType<M>,
     pub stake_amount: BigUint<M>,
     pub stake_timestamp: u64
