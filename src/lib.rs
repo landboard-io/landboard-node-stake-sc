@@ -30,7 +30,7 @@ pub trait LandboardStaking: storage::StorageModule{
 
     #[payable("*")]
     #[endpoint]
-    fn stake(&self, #[payment_token] payment_token_id: TokenIdentifier, #[payment_amount] payment_amount: BigUint, stake_type_id: usize) {
+    fn stake(&self, #[payment_token] payment_token_id: TokenIdentifier, #[payment_amount] payment_amount: BigUint, stake_type_id: usize, #[var_args] opt_referrer_address: OptionalValue<ManagedAddress>) {
         self.require_activation();
 
         require!(
@@ -54,6 +54,20 @@ pub trait LandboardStaking: storage::StorageModule{
         // if caller is a new address, add it to staker_addresses
         if !self.staker_addresses().contains(&caller) {
             self.staker_addresses().insert(caller.clone());
+
+            if let OptionalValue::Some(v) = opt_referrer_address {
+                self.referrer_address(&caller).set(&v);
+            }
+        }
+
+        if payment_amount >= self.referral_activation_amount().get() && !self.referral_activated(&caller).get() {
+            let referrer_address = &self.referrer_address(&caller).get();
+            let new_referred_count = self.referred_count(&referrer_address).get() + 1;
+
+            if new_referred_count <= self.max_apy_increase_by_referral().get() {
+                self.referred_count(&referrer_address).set(new_referred_count);
+            }
+            self.referral_activated(&caller).set(true);
         }
 
         let new_node_id = self.last_node_id(&caller).get() + 1;
@@ -130,9 +144,12 @@ pub trait LandboardStaking: storage::StorageModule{
 
     #[inline]
     fn get_claimable_and_reward(&self, stake_node: &StakeNode<Self::Api>) -> (bool, BigUint) {
+        let caller = self.blockchain().get_caller();
         let stake_type = &stake_node.stake_type;
 
-        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.roi);
+    
+        let roi = stake_type.roi + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), roi);
 
         // if it's before locking_timestamp, charge tax to reward
         if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {

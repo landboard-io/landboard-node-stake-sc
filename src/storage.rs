@@ -4,7 +4,7 @@ elrond_wasm::derive_imports!();
 use crate::state::{StakeType, StakeNode};
 
 
-const MAX_TAX: u32 = 10000; // 100%
+const MAX_PERCENTAGE: u32 = 10000; // 100%
 
 #[elrond_wasm::module]
 pub trait StorageModule {
@@ -47,8 +47,8 @@ pub trait StorageModule {
             let (locking_timestamp, min_stake_limit, tax, roi) = item.into_tuple();
 
             require!(
-                tax <= MAX_TAX,
-                "tax cannot be greater than MAX_TAX 1000"
+                tax <= MAX_PERCENTAGE,
+                "tax cannot be greater than MAX_PERCENTAGE 1000"
             );
 
             let new_stake_type = StakeType {
@@ -102,4 +102,60 @@ pub trait StorageModule {
     #[view(getNode)]
     #[storage_mapper("nodes")]
     fn nodes(&self, staker_address: &ManagedAddress, node_id: usize) -> SingleValueMapper<StakeNode<Self::Api>>;
+
+    
+    /// referral
+    
+    #[view(getReferrerAddress)]
+    #[storage_mapper("referrer_address")]
+    fn referrer_address(&self, user_address: &ManagedAddress) -> SingleValueMapper<ManagedAddress>;
+
+    #[view(getReferralActivated)]
+    #[storage_mapper("referral_activated")]
+    fn referral_activated(&self, user_address: &ManagedAddress) -> SingleValueMapper<bool>;
+
+    #[view(getReferredCount)]
+    #[storage_mapper("referred_count")]
+    fn referred_count(&self, user_address: &ManagedAddress) -> SingleValueMapper<u32>;
+
+    //
+    #[view(getReferralActivationAmount)]
+    #[storage_mapper("referral_activation_amount")]
+    fn referral_activation_amount(&self) -> SingleValueMapper<BigUint>;
+
+    #[only_owner]
+    #[endpoint(setReferralActivationAmount)]
+    fn set_referral_activation_amount(&self, referral_activation_amount: BigUint) {
+        self.referral_activation_amount().set(referral_activation_amount);
+    }
+
+    //
+    #[view(getApyIncreasePerReferral)]
+    #[storage_mapper("apy_increase_per_referral")]
+    fn apy_increase_per_referral(&self) -> SingleValueMapper<u32>;
+
+    #[only_owner]
+    #[endpoint(setApyIncreasePerReferral)]
+    fn set_apy_increase_per_referral(&self, apy_increase_per_referral: u32) {
+        require!(
+            apy_increase_per_referral <= MAX_PERCENTAGE,
+            "cannot be greater than 10000"
+        );
+        self.apy_increase_per_referral().set(apy_increase_per_referral);
+    }
+
+    //
+    #[view(getMaxApyIncreaseByReferral)]
+    #[storage_mapper("max_apy_increase_by_referral")]
+    fn max_apy_increase_by_referral(&self) -> SingleValueMapper<u32>;
+
+    #[only_owner]
+    #[endpoint(setMaxApyIncreaseByReferral)]
+    fn set_max_apy_increase_by_referral(&self, max_apy_increase_by_referral: u32) {
+        require!(
+            max_apy_increase_by_referral <= MAX_PERCENTAGE,
+            "cannot be greater than 10000"
+        );
+        self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
+    }
 }
