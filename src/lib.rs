@@ -104,7 +104,11 @@ pub trait LandboardStaking:
             node_id: new_node_id,
             stake_type: stake_type,
             stake_amount: payment_amount.clone(),
-            stake_timestamp: self.blockchain().get_block_timestamp()
+            stake_timestamp: self.blockchain().get_block_timestamp(),
+            
+            unstaked: false,
+            reward_amount: BigUint::zero(),
+            unstake_timestamp: 0u64,
         };
 
         self.nodes(&caller, new_node_id).set(stake_node);
@@ -113,6 +117,10 @@ pub trait LandboardStaking:
         self.stake_event(caller, new_node_id, stake_type_id, payment_amount, self.blockchain().get_block_timestamp());
     }
 
+    /*
+        @dev if caller unstakes node before locking, reward will be reduced by tax and timstamp ratio
+        unstaked node will be delegated by delegated_timestamp
+    */
     #[endpoint]
     fn unstake(&self, node_id: usize) {
         self.require_activation();
@@ -124,11 +132,52 @@ pub trait LandboardStaking:
             "node_id does not exist"
         );
 
-        let stake_node = self.nodes(&caller, node_id).get();
+        let mut stake_node = self.nodes(&caller, node_id).get();
+
+        require!(
+            !stake_node.unstaked,
+            "node was already unstaked"
+        );
+
         let (_, reward_amount) = self.get_claimable_and_reward(&stake_node);
 
-        let stake_amount = stake_node.stake_amount.clone();
+        stake_node.unstaked = true;
+        stake_node.reward_amount = reward_amount.clone();
+        stake_node.unstake_timestamp = self.blockchain().get_block_timestamp();
 
+        
+        self.unstake_event(caller, node_id, stake_node.stake_amount.clone(), stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
+    }
+
+    /*
+        @dev unstaked node can be claimed after delegated_timestamp
+    */
+    #[endpoint]
+    fn claim(&self, node_id: usize) {
+        self.require_activation();
+
+        let caller = self.blockchain().get_caller();
+
+        require!(
+            self.node_ids(&caller).contains(&node_id),
+            "node_id does not exist"
+        );
+
+        let stake_node = self.nodes(&caller, node_id).get();
+
+        require!(
+            stake_node.unstaked,
+            "not claimable - node is not unstaked"
+        );
+        require!(
+            self.blockchain().get_block_timestamp() >= stake_node.unstake_timestamp + stake_node.stake_type.delegation_timestamp,
+            "cannot claim before delegation_timestamp"
+        );
+
+        let stake_amount = stake_node.stake_amount.clone();
+        let reward_amount = stake_node.reward_amount.clone();
+        
+        // check balance of SC whether have enought tokens to send
         if self.stake_token_id().get() == self.reward_token_id().get() {
             require!(
                 stake_amount.clone() + &reward_amount <= self.blockchain().get_sc_balance(&self.stake_token_id().get(), 0),
@@ -155,7 +204,7 @@ pub trait LandboardStaking:
         self.send().direct(&caller, &self.stake_token_id().get(), 0, &stake_amount, b"return staked tokens");
         self.send().direct(&caller, &self.reward_token_id().get(), 0, &reward_amount, b"return reward tokens");
 
-        self.unstake_event(caller, node_id, stake_amount, stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
+        self.claim_event(caller, node_id, stake_amount, stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
     }
 
     #[only_owner]

@@ -40,4 +40,15 @@ pub trait EventModule {
         #[indexed] reward_amount: BigUint,
         #[indexed] unstake_timestamp: u64,
     );
+
+    #[event("claim")]
+    fn claim_event(
+        &self,
+        #[indexed] caller: ManagedAddress,
+        #[indexed] node_id: usize,
+        #[indexed] stake_amount: BigUint,
+        #[indexed] stake_timestamp: u64,
+        #[indexed] reward_amount: BigUint,
+        #[indexed] claim_timestamp: u64,
+    );
 }

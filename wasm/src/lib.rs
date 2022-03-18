@@ -8,6 +8,7 @@ elrond_wasm_node::wasm_endpoints! {
     landboard_node_stake
     (
         addStakeTypes
+        claim
         clearStakeTypes
         getApyIncreasePerReferral
         getLastNodeId

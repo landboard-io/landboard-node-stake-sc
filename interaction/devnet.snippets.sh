@@ -54,7 +54,7 @@ addStakeTypes() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="addStakeTypes" \
-    --arguments 1 100000000000000000000 5000 5000 30 100000000000000000000 5000 10000 \
+    --arguments 1 1 100000000000000000000 5000 5000 30 10 100000000000000000000 5000 10000 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -71,6 +71,15 @@ unstake() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="unstake" \
+    --arguments 1 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+claim() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="claim" \
     --arguments 1 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
