@@ -10,6 +10,7 @@ CALLER_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 CALLER_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 
 CALLER2_ADDRESS="erd1ygdttzrulwfspme2s4qrx5y2qyfqalju0k2vcyy8z3979whlj9qssl5uay"
+CALLER2_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER2_ADDRESS})"
 CALLER2_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER2_ADDRESS})"
 
 TOKEN_ID="SVEN-4b35b0"
@@ -54,7 +55,7 @@ addStakeTypes() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="addStakeTypes" \
-    --arguments 1 1 100000000000000000000 5000 5000 30 10 100000000000000000000 5000 10000 \
+    --arguments 1 1 100000000000000000000 5000 5000 30 30 100000000000000000000 5000 10000 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -97,6 +98,15 @@ unstake2() {
     --recall-nonce --pem=${WALLET2} \
     --gas-limit=6000000 \
     --function="unstake" \
+    --arguments 1 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+claim2() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET2} \
+    --gas-limit=6000000 \
+    --function="claim" \
     --arguments 1 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
@@ -160,4 +170,36 @@ getNodesPerStaker() {
 
 getNode() {
     erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getNode" --arguments ${CALLER_ADDRESS_HEX} 1
+}
+
+getStakeTokenId() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getStakeTokenId"
+}
+
+getRewardTokenId() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getRewardTokenId"
+}
+
+getReferrerAddress() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferrerAddress" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getReferralActivated() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferralActivated" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getReferredCount() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferredCount" --arguments ${CALLER_ADDRESS_HEX}
+}
+
+getReferralActivationAmount() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferralActivationAmount"
+}
+
+getApyIncreasePerReferral() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getApyIncreasePerReferral"
+}
+
+getMaxApyIncreaseByReferral() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getMaxApyIncreaseByReferral"
 }

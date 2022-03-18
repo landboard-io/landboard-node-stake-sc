@@ -144,9 +144,10 @@ pub trait LandboardStaking:
         stake_node.unstaked = true;
         stake_node.reward_amount = reward_amount.clone();
         stake_node.unstake_timestamp = self.blockchain().get_block_timestamp();
-
         
-        self.unstake_event(caller, node_id, stake_node.stake_amount.clone(), stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
+        self.unstake_event(caller.clone(), node_id, stake_node.stake_amount.clone(), stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
+
+        self.nodes(&caller, node_id).set(stake_node);
     }
 
     /*
