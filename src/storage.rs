@@ -4,7 +4,7 @@ elrond_wasm::derive_imports!();
 use crate::state::{StakeType, StakeNode};
 
 
-const MAX_PERCENTAGE: u32 = 10000; // 100%
+const TOTAL_PERCENTAGE: u32 = 10000; // 100%
 
 #[elrond_wasm::module]
 pub trait StorageModule {
@@ -47,8 +47,8 @@ pub trait StorageModule {
             let (locking_timestamp, min_stake_limit, tax, roi) = item.into_tuple();
 
             require!(
-                tax <= MAX_PERCENTAGE,
-                "tax cannot be greater than MAX_PERCENTAGE 1000"
+                tax <= TOTAL_PERCENTAGE,
+                "tax cannot be greater than TOTAL_PERCENTAGE 1000"
             );
 
             let new_stake_type = StakeType {
@@ -138,7 +138,7 @@ pub trait StorageModule {
     #[endpoint(setApyIncreasePerReferral)]
     fn set_apy_increase_per_referral(&self, apy_increase_per_referral: u32) {
         require!(
-            apy_increase_per_referral <= MAX_PERCENTAGE,
+            apy_increase_per_referral <= TOTAL_PERCENTAGE,
             "cannot be greater than 10000"
         );
         self.apy_increase_per_referral().set(apy_increase_per_referral);
@@ -153,7 +153,7 @@ pub trait StorageModule {
     #[endpoint(setMaxApyIncreaseByReferral)]
     fn set_max_apy_increase_by_referral(&self, max_apy_increase_by_referral: u32) {
         require!(
-            max_apy_increase_by_referral <= MAX_PERCENTAGE,
+            max_apy_increase_by_referral <= TOTAL_PERCENTAGE,
             "cannot be greater than 10000"
         );
         self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);

@@ -7,10 +7,16 @@ WALLET2="./wallets/test-wallet-2.pem"
 
 CALLER_ADDRESS="erd1dl8ucerztz80eqtvs2u35vj5pckle3h3mnuce5fctyzxp4d74dfqwy7ntn"
 CALLER_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
+CALLER_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 
 TOKEN_ID="SVEN-4b35b0"
 TOKEN_ID_HEX="0x$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 TOKEN_ID_ONLY_HEX="$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
+
+REFERRRAL_ACTIVATION_AMOUNT=100000000000000000000 # 100 LAND
+APY_INCREASE_PER_REFERRAL=50    # 0.5%
+MAX_APY_INCREASE_BY_REFERRAL=1000   # 10%
+
 
 STAKE="stake"
 STAKE_ONLY_HEX="$(echo -n ${STAKE} | xxd -p -u | tr -d '\n')"
@@ -26,7 +32,7 @@ deploy() {
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=50000000 \
-    --arguments ${TOKEN_ID_HEX} ${TOKEN_ID_HEX} \
+    --arguments ${TOKEN_ID_HEX} ${TOKEN_ID_HEX} ${REFERRRAL_ACTIVATION_AMOUNT} ${APY_INCREASE_PER_REFERRAL} ${MAX_APY_INCREASE_BY_REFERRAL} \
     --send \
     --metadata-payable \
     --outfile="deploy-devnet.interaction.json" \
@@ -53,7 +59,7 @@ stake() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
-    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01" \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@0x00" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -68,15 +74,15 @@ unstake() {
 
 stake2() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
-    --recall-nonce --pem=${WALLET} \
+    --recall-nonce --pem=${WALLET2} \
     --gas-limit=6000000 \
-    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@02" \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@${CALLER_ADDRESS_ONLY_HEX}" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
 unstake2() {
     erdpy --verbose contract call ${ADDRESS} \
-    --recall-nonce --pem=${WALLET} \
+    --recall-nonce --pem=${WALLET2} \
     --gas-limit=6000000 \
     --function="unstake" \
     --arguments 1 \
@@ -88,6 +94,33 @@ withdraw() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="withdraw" \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+setReferralActivationAmount() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="setReferralActivationAmount" \
+    --arguments 1000000000000000000 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+setApyIncreasePerReferral() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="setApyIncreasePerReferral" \
+    --arguments 50 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+setMaxApyIncreaseByReferral() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="setMaxApyIncreaseByReferral" \
+    --arguments 1000 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 

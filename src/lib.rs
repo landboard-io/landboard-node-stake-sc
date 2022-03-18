@@ -14,7 +14,7 @@ const TOTAL_PERCENTAGE: u32 = 10000; // 100%
 #[elrond_wasm::derive::contract]
 pub trait LandboardStaking: storage::StorageModule{
     #[init]
-    fn init(&self, stake_token_id: TokenIdentifier, reward_token_id: TokenIdentifier) {
+    fn init(&self, stake_token_id: TokenIdentifier, reward_token_id: TokenIdentifier, referral_activation_amount: BigUint, apy_increase_per_referral: u32, max_apy_increase_by_referral: u32) {
         require!(
             stake_token_id.is_valid_esdt_identifier(),
             "invalid stake_token_id"
@@ -26,6 +26,20 @@ pub trait LandboardStaking: storage::StorageModule{
             "invalid reward_token_id"
         );
         self.reward_token_id().set(&reward_token_id);
+
+        self.referral_activation_amount().set(&referral_activation_amount);
+
+        require!(
+            apy_increase_per_referral <= TOTAL_PERCENTAGE,
+            "cannot be greater than 10000"
+        );
+        self.apy_increase_per_referral().set(apy_increase_per_referral);
+
+        require!(
+            max_apy_increase_by_referral <= TOTAL_PERCENTAGE,
+            "cannot be greater than 10000"
+        );
+        self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
     }
 
     #[payable("*")]
@@ -64,7 +78,7 @@ pub trait LandboardStaking: storage::StorageModule{
             let referrer_address = &self.referrer_address(&caller).get();
             let new_referred_count = self.referred_count(&referrer_address).get() + 1;
 
-            if new_referred_count <= self.max_apy_increase_by_referral().get() {
+            if new_referred_count * self.apy_increase_per_referral().get() <= self.max_apy_increase_by_referral().get() {
                 self.referred_count(&referrer_address).set(new_referred_count);
             }
             self.referral_activated(&caller).set(true);
