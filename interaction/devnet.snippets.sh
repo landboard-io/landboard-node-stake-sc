@@ -9,6 +9,9 @@ CALLER_ADDRESS="erd1dl8ucerztz80eqtvs2u35vj5pckle3h3mnuce5fctyzxp4d74dfqwy7ntn"
 CALLER_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 CALLER_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 
+CALLER2_ADDRESS="erd1ygdttzrulwfspme2s4qrx5y2qyfqalju0k2vcyy8z3979whlj9qssl5uay"
+CALLER2_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER2_ADDRESS})"
+
 TOKEN_ID="SVEN-4b35b0"
 TOKEN_ID_HEX="0x$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 TOKEN_ID_ONLY_HEX="$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
@@ -31,7 +34,7 @@ deploy() {
     --project=${PROJECT} \
     --recall-nonce \
     --pem=${WALLET} \
-    --gas-limit=50000000 \
+    --gas-limit=100000000 \
     --arguments ${TOKEN_ID_HEX} ${TOKEN_ID_HEX} ${REFERRRAL_ACTIVATION_AMOUNT} ${APY_INCREASE_PER_REFERRAL} ${MAX_APY_INCREASE_BY_REFERRAL} \
     --send \
     --metadata-payable \
@@ -58,8 +61,8 @@ addStakeTypes() {
 stake() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
-    --gas-limit=6000000 \
-    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@0x00" \
+    --gas-limit=10000000 \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@${CALLER2_ADDRESS_ONLY_HEX}" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -75,7 +78,7 @@ unstake() {
 stake2() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET2} \
-    --gas-limit=6000000 \
+    --gas-limit=20000000 \
     --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@${CALLER_ADDRESS_ONLY_HEX}" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }

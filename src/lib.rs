@@ -6,13 +6,17 @@ elrond_wasm::derive_imports!();
 
 mod state;
 mod storage;
+mod event;
 
 use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
 
 #[elrond_wasm::derive::contract]
-pub trait LandboardStaking: storage::StorageModule{
+pub trait LandboardStaking:
+    storage::StorageModule
+    + event::EventModule
+{
     #[init]
     fn init(&self, stake_token_id: TokenIdentifier, reward_token_id: TokenIdentifier, referral_activation_amount: BigUint, apy_increase_per_referral: u32, max_apy_increase_by_referral: u32) {
         require!(
@@ -70,7 +74,14 @@ pub trait LandboardStaking: storage::StorageModule{
             self.staker_addresses().insert(caller.clone());
 
             if let OptionalValue::Some(v) = opt_referrer_address {
+                require!(
+                    caller != v,
+                    "referrer cannot be yourself"
+                );
+
                 self.referrer_address(&caller).set(&v);
+
+                self.referral_event(caller.clone(), v.clone());
             }
         }
 
@@ -82,6 +93,8 @@ pub trait LandboardStaking: storage::StorageModule{
                 self.referred_count(&referrer_address).set(new_referred_count);
             }
             self.referral_activated(&caller).set(true);
+
+            self.referral_activated_event(caller.clone(), referrer_address.clone(), self.blockchain().get_block_timestamp(), payment_amount.clone());
         }
 
         let new_node_id = self.last_node_id(&caller).get() + 1;
@@ -90,12 +103,14 @@ pub trait LandboardStaking: storage::StorageModule{
         let stake_node = StakeNode {
             node_id: new_node_id,
             stake_type: stake_type,
-            stake_amount: payment_amount,
+            stake_amount: payment_amount.clone(),
             stake_timestamp: self.blockchain().get_block_timestamp()
         };
 
         self.nodes(&caller, new_node_id).set(stake_node);
         self.last_node_id(&caller).set(&new_node_id);
+
+        self.stake_event(caller, new_node_id, stake_type_id, payment_amount, self.blockchain().get_block_timestamp());
     }
 
     #[endpoint]
