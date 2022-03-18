@@ -129,14 +129,21 @@ pub trait LandboardStaking:
 
         let stake_amount = stake_node.stake_amount.clone();
 
-        require!(
-            stake_amount <= self.blockchain().get_sc_balance(&self.stake_token_id().get(), 0),
-            "not enough stake tokens in smart contract"
-        );
-        require!(
-            reward_amount <= self.blockchain().get_sc_balance(&self.reward_token_id().get(), 0),
-            "not enough reward tokens in smart contract"
-        );
+        if self.stake_token_id().get() == self.reward_token_id().get() {
+            require!(
+                stake_amount.clone() + &reward_amount <= self.blockchain().get_sc_balance(&self.stake_token_id().get(), 0),
+                "not enough stake/reward tokens in smart contract"
+            );
+        } else {
+            require!(
+                stake_amount <= self.blockchain().get_sc_balance(&self.stake_token_id().get(), 0),
+                "not enough stake tokens in smart contract"
+            );
+            require!(
+                reward_amount <= self.blockchain().get_sc_balance(&self.reward_token_id().get(), 0),
+                "not enough reward tokens in smart contract"
+            );
+        }
 
         // clear old storage
         self.node_ids(&caller).remove(&node_id);
@@ -146,7 +153,9 @@ pub trait LandboardStaking:
         }
 
         self.send().direct(&caller, &self.stake_token_id().get(), 0, &stake_amount, b"return staked tokens");
-        self.send().direct(&caller, &self.stake_token_id().get(), 0, &reward_amount, b"return reward tokens");
+        self.send().direct(&caller, &self.reward_token_id().get(), 0, &reward_amount, b"return reward tokens");
+
+        self.unstake_event(caller, node_id, stake_amount, stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
     }
 
     #[only_owner]

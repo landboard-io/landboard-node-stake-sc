@@ -29,4 +29,15 @@ pub trait EventModule {
         #[indexed] timestamp: u64,
         #[indexed] amount: BigUint,
     );
+
+    #[event("unstake")]
+    fn unstake_event(
+        &self,
+        #[indexed] caller: ManagedAddress,
+        #[indexed] node_id: usize,
+        #[indexed] stake_amount: BigUint,
+        #[indexed] stake_timestamp: u64,
+        #[indexed] reward_amount: BigUint,
+        #[indexed] unstake_timestamp: u64,
+    );
 }
