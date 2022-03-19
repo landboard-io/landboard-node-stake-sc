@@ -8,7 +8,7 @@ pub struct StakeType<M: ManagedTypeApi> {
     pub delegation_timestamp: u64,  // interval between unstaking and claimable state
     pub min_stake_limit: BigUint<M>,
     pub tax: u32,       // tax; 1000 = 10%
-    pub roi: u32,       // return of invest; 5000 = 50%
+    pub apy: u32,       // apy; 5000 = 50%
 }
 
 #[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone)]

@@ -11,6 +11,7 @@ mod event;
 use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
+const YEAR_IN_SECONDS: u32 = 3600 * 24 * 265;
 
 #[elrond_wasm::derive::contract]
 pub trait LandboardStaking:
@@ -236,8 +237,8 @@ pub trait LandboardStaking:
         let stake_type = &stake_node.stake_type;
 
     
-        let roi = stake_type.roi + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
-        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), roi);
+        let apy = stake_type.apy + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.locking_timestamp, apy);
 
         // if it's before locking_timestamp, charge tax to reward
         if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
@@ -250,8 +251,8 @@ pub trait LandboardStaking:
     }
 
     #[inline]
-    fn calculate_reward(&self, base_amount: BigUint, roi: u32) -> BigUint {
-        base_amount * &BigUint::from(roi) / &BigUint::from(TOTAL_PERCENTAGE)
+    fn calculate_reward(&self, base_amount: BigUint, locking_timestamp: u64, apy: u32) -> BigUint {
+        base_amount * &BigUint::from(apy) * &BigUint::from(locking_timestamp) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_SECONDS)
     }
 
     fn require_activation(&self) {

@@ -44,7 +44,7 @@ pub trait StorageModule {
     #[endpoint(addStakeTypes)]
     fn add_stake_types(&self, #[var_args] stake_types: MultiValueEncoded<MultiValue5<u64, u64, BigUint, u32, u32>>) {
         for item in stake_types.into_iter() {
-            let (locking_timestamp, delegation_timestamp, min_stake_limit, tax, roi) = item.into_tuple();
+            let (locking_timestamp, delegation_timestamp, min_stake_limit, tax, apy) = item.into_tuple();
 
             require!(
                 tax <= TOTAL_PERCENTAGE,
@@ -56,7 +56,7 @@ pub trait StorageModule {
                 delegation_timestamp,
                 min_stake_limit,
                 tax,
-                roi,
+                apy,
             };
             self.stake_types().push(&new_stake_type);
         }
