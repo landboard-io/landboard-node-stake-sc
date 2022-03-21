@@ -20,6 +20,7 @@ TOKEN_ID_ONLY_HEX="$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 REFERRRAL_ACTIVATION_AMOUNT=100000000000000000000 # 100 LAND
 APY_INCREASE_PER_REFERRAL=50    # 0.5%
 MAX_APY_INCREASE_BY_REFERRAL=1000   # 10%
+REFERRAL_REWARD=50000000000000000000 # 50 LAND
 
 
 STAKE="stake"
@@ -36,7 +37,7 @@ deploy() {
     --recall-nonce \
     --pem=${WALLET} \
     --gas-limit=100000000 \
-    --arguments ${TOKEN_ID_HEX} ${TOKEN_ID_HEX} ${REFERRRAL_ACTIVATION_AMOUNT} ${APY_INCREASE_PER_REFERRAL} ${MAX_APY_INCREASE_BY_REFERRAL} \
+    --arguments ${TOKEN_ID_HEX} ${TOKEN_ID_HEX} ${REFERRRAL_ACTIVATION_AMOUNT} ${APY_INCREASE_PER_REFERRAL} ${MAX_APY_INCREASE_BY_REFERRAL} ${REFERRAL_REWARD} \
     --send \
     --metadata-payable \
     --outfile="deploy-devnet.interaction.json" \
@@ -202,4 +203,8 @@ getApyIncreasePerReferral() {
 
 getMaxApyIncreaseByReferral() {
     erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getMaxApyIncreaseByReferral"
+}
+
+getReferralReward() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferralReward"
 }

@@ -159,4 +159,15 @@ pub trait StorageModule {
         );
         self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
     }
+
+    //
+    #[view(getReferralReward)]
+    #[storage_mapper("referral_reward")]
+    fn referral_reward(&self) -> SingleValueMapper<BigUint>;
+
+    #[only_owner]
+    #[endpoint(setReferralReward)]
+    fn set_referral_reward(&self, referral_reward: BigUint) {
+        self.referral_reward().set(referral_reward);
+    }
 }

@@ -19,6 +19,7 @@ elrond_wasm_node::wasm_endpoints! {
         getPaused
         getReferralActivated
         getReferralActivationAmount
+        getReferralReward
         getReferredCount
         getReferrerAddress
         getRewardTokenId
@@ -29,6 +30,7 @@ elrond_wasm_node::wasm_endpoints! {
         setApyIncreasePerReferral
         setMaxApyIncreaseByReferral
         setReferralActivationAmount
+        setReferralReward
         setRewardTokenId
         setStakeTokenId
         stake

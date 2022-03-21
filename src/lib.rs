@@ -19,7 +19,15 @@ pub trait LandboardStaking:
     + event::EventModule
 {
     #[init]
-    fn init(&self, stake_token_id: TokenIdentifier, reward_token_id: TokenIdentifier, referral_activation_amount: BigUint, apy_increase_per_referral: u32, max_apy_increase_by_referral: u32) {
+    fn init(
+        &self,
+        stake_token_id: TokenIdentifier,
+        reward_token_id: TokenIdentifier,
+        referral_activation_amount: BigUint,
+        apy_increase_per_referral: u32,
+        max_apy_increase_by_referral: u32,
+        referral_reward: BigUint
+    ) {
         require!(
             stake_token_id.is_valid_esdt_identifier(),
             "invalid stake_token_id"
@@ -45,11 +53,18 @@ pub trait LandboardStaking:
             "cannot be greater than 10000"
         );
         self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
+        self.referral_reward().set(&referral_reward);
     }
 
     #[payable("*")]
     #[endpoint]
-    fn stake(&self, #[payment_token] payment_token_id: TokenIdentifier, #[payment_amount] payment_amount: BigUint, stake_type_id: usize, #[var_args] opt_referrer_address: OptionalValue<ManagedAddress>) {
+    fn stake(
+        &self,
+        #[payment_token] payment_token_id: TokenIdentifier,
+        #[payment_amount] payment_amount: BigUint,
+        stake_type_id: usize,
+        #[var_args] opt_referrer_address: OptionalValue<ManagedAddress>
+    ) {
         self.require_activation();
 
         require!(
@@ -74,15 +89,18 @@ pub trait LandboardStaking:
         if !self.staker_addresses().contains(&caller) {
             self.staker_addresses().insert(caller.clone());
 
-            if let OptionalValue::Some(v) = opt_referrer_address {
+            if let OptionalValue::Some(referrer_address) = opt_referrer_address {
                 require!(
-                    caller != v,
+                    caller != referrer_address,
                     "referrer cannot be yourself"
                 );
 
-                self.referrer_address(&caller).set(&v);
+                self.referrer_address(&caller).set(&referrer_address);
 
-                self.referral_event(caller.clone(), v.clone());
+                // send referral_reward to referrer
+                self.send().direct(&referrer_address, &self.reward_token_id().get(), 0, &self.referral_reward().get(),b"referral reward");
+
+                self.referral_event(caller.clone(), referrer_address);
             }
         }
 
@@ -123,7 +141,10 @@ pub trait LandboardStaking:
         unstaked node will be delegated by delegated_timestamp
     */
     #[endpoint]
-    fn unstake(&self, node_id: usize) {
+    fn unstake(
+        &self,
+        node_id: usize
+    ) {
         self.require_activation();
 
         let caller = self.blockchain().get_caller();
@@ -155,7 +176,10 @@ pub trait LandboardStaking:
         @dev unstaked node can be claimed after delegated_timestamp
     */
     #[endpoint]
-    fn claim(&self, node_id: usize) {
+    fn claim(
+        &self,
+        node_id: usize
+    ) {
         self.require_activation();
 
         let caller = self.blockchain().get_caller();
@@ -213,7 +237,8 @@ pub trait LandboardStaking:
     #[endpoint(withdraw)]
     fn withdraw(&self,
         #[var_args] opt_token_id: OptionalValue<TokenIdentifier>,
-        #[var_args] opt_token_amount: OptionalValue<BigUint>) {
+        #[var_args] opt_token_amount: OptionalValue<BigUint>
+    ) {
         // if token_id is not given, set it to eGLD
         let token_id = match opt_token_id {
             OptionalValue::Some(v) => v,
@@ -232,7 +257,10 @@ pub trait LandboardStaking:
     /// private
 
     #[inline]
-    fn get_claimable_and_reward(&self, stake_node: &StakeNode<Self::Api>) -> (bool, BigUint) {
+    fn get_claimable_and_reward(
+        &self,
+        stake_node: &StakeNode<Self::Api>
+    ) -> (bool, BigUint) {
         let caller = self.blockchain().get_caller();
         let stake_type = &stake_node.stake_type;
 
@@ -251,7 +279,12 @@ pub trait LandboardStaking:
     }
 
     #[inline]
-    fn calculate_reward(&self, base_amount: BigUint, locking_timestamp: u64, apy: u32) -> BigUint {
+    fn calculate_reward(
+        &self,
+        base_amount: BigUint,
+        locking_timestamp: u64,
+        apy: u32
+    ) -> BigUint {
         base_amount * &BigUint::from(apy) * &BigUint::from(locking_timestamp) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_SECONDS)
     }
 
@@ -265,7 +298,10 @@ pub trait LandboardStaking:
     /// view
     
     #[view(getNodesPerStaker)]
-    fn get_nodes_per_staker(&self, staker_address: ManagedAddress) -> MultiValueEncoded<MultiValue6<usize, BigUint, u64, u64, bool, BigUint>> {
+    fn get_nodes_per_staker(
+        &self,
+        staker_address: ManagedAddress
+    ) -> MultiValueEncoded<MultiValue6<usize, BigUint, u64, u64, bool, BigUint>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&staker_address).iter() {
             let stake_node = self.nodes(&staker_address, node_id).get();
