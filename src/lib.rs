@@ -97,9 +97,6 @@ pub trait LandboardStaking:
 
                 self.referrer_address(&caller).set(&referrer_address);
 
-                // send referral_reward to referrer
-                self.send().direct(&referrer_address, &self.reward_token_id().get(), 0, &self.referral_reward().get(),b"referral reward");
-
                 self.referral_event(caller.clone(), referrer_address);
             }
         }
@@ -112,6 +109,9 @@ pub trait LandboardStaking:
                 self.referred_count(&referrer_address).set(new_referred_count);
             }
             self.referral_activated(&caller).set(true);
+
+            // send referral_reward to referrer
+            self.send().direct(&referrer_address, &self.reward_token_id().get(), 0, &self.referral_reward().get(),b"referral reward");
 
             self.referral_activated_event(caller.clone(), referrer_address.clone(), self.blockchain().get_block_timestamp(), payment_amount.clone());
         }

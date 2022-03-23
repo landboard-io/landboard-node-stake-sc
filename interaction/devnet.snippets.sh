@@ -17,10 +17,10 @@ TOKEN_ID="SVEN-4b35b0"
 TOKEN_ID_HEX="0x$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 TOKEN_ID_ONLY_HEX="$(echo -n ${TOKEN_ID} | xxd -p -u | tr -d '\n')"
 
-REFERRRAL_ACTIVATION_AMOUNT=100000000000000000000 # 100 LAND
+REFERRRAL_ACTIVATION_AMOUNT=300000000000000000000 # 300 LAND
 APY_INCREASE_PER_REFERRAL=50    # 0.5%
 MAX_APY_INCREASE_BY_REFERRAL=1000   # 10%
-REFERRAL_REWARD=50000000000000000000 # 50 LAND
+REFERRAL_REWARD=150000000000000000000 # 150 LAND
 
 
 STAKE="stake"
@@ -44,11 +44,14 @@ deploy() {
     --proxy=${PROXY} \
     --chain=${CHAIN_ID} || return
 
-    TRANSACTION=$(erdpy data parse --file="deploy-devnet.interaction.json" --expression="data['emitted_tx']['hash']")
-    ADDRESS=$(erdpy data parse --file="deploy-devnet.interaction.json" --expression="data['emitted_tx']['address']")
+    TRANSACTION=$(erdpy data parse --file="deploy-devnet.interaction.json" --expression="data['emittedTransactionHash']")
+    ADDRESS=$(erdpy data parse --file="deploy-devnet.interaction.json" --expression="data['contractAddress']")
 
     erdpy data store --key=address-devnet --value=${ADDRESS}
     erdpy data store --key=deployTransaction-devnet --value=${TRANSACTION}
+
+    echo ""
+    echo "Smart contract address: ${ADDRESS}"
 }
 
 addStakeTypes() {
@@ -64,7 +67,7 @@ stake() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
     --gas-limit=10000000 \
-    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@${CALLER2_ADDRESS_ONLY_HEX}" \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@1043561a8829300000@${STAKE_ONLY_HEX}@01@${CALLER2_ADDRESS_ONLY_HEX}" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
