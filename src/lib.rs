@@ -11,7 +11,8 @@ mod event;
 use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
-const YEAR_IN_SECONDS: u32 = 3600 * 24 * 265;
+const DAY_IN_SECONDS: u64 = 3600 * 24;
+const YEAR_IN_DAYS: u64 = 365;
 
 #[elrond_wasm::derive::contract]
 pub trait LandboardStaking:
@@ -227,8 +228,13 @@ pub trait LandboardStaking:
             self.staker_addresses().remove(&caller);
         }
 
-        self.send().direct(&caller, &self.stake_token_id().get(), 0, &stake_amount, b"return staked tokens");
-        self.send().direct(&caller, &self.reward_token_id().get(), 0, &reward_amount, b"return reward tokens");
+        if stake_amount > BigUint::zero() {
+            self.send().direct(&caller, &self.stake_token_id().get(), 0, &stake_amount, b"return staked tokens");
+        }
+
+        if reward_amount > BigUint::zero() {
+            self.send().direct(&caller, &self.reward_token_id().get(), 0, &reward_amount, b"return reward tokens");
+        }
 
         self.claim_event(caller, node_id, stake_amount, stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
     }
@@ -278,6 +284,8 @@ pub trait LandboardStaking:
         (true, reward_amount)
     }
 
+    // rewrad will be calculated in daily basis
+    // if 24 hours not passed, days will be zero and reward will also be zero
     #[inline]
     fn calculate_reward(
         &self,
@@ -285,7 +293,8 @@ pub trait LandboardStaking:
         locking_timestamp: u64,
         apy: u32
     ) -> BigUint {
-        base_amount * &BigUint::from(apy) * &BigUint::from(locking_timestamp) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_SECONDS)
+        let days = locking_timestamp / DAY_IN_SECONDS;
+        base_amount * &BigUint::from(apy) * &BigUint::from(days) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_DAYS)
     }
 
     fn require_activation(&self) {
