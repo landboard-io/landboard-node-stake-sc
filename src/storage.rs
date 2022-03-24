@@ -161,17 +161,6 @@ pub trait StorageModule {
     }
 
     //
-    #[view(getReferralReward)]
-    #[storage_mapper("referral_reward")]
-    fn referral_reward(&self) -> SingleValueMapper<BigUint>;
-
-    #[only_owner]
-    #[endpoint(setReferralReward)]
-    fn set_referral_reward(&self, referral_reward: BigUint) {
-        self.referral_reward().set(referral_reward);
-    }
-
-    //
     #[view(getPromoIncreaseApy)]
     #[storage_mapper("promo_increase_apy")]
     fn promo_increase_apy(&self) -> SingleValueMapper<u32>;
@@ -181,4 +170,20 @@ pub trait StorageModule {
     fn set_promo_increase_apy(&self, promo_increase_apy: u32) {
         self.promo_increase_apy().set(promo_increase_apy);
     }
+
+    //
+    #[view(getTotalReferralCountLimit)]
+    #[storage_mapper("total_referral_count_limit")]
+    fn total_referral_count_limit(&self) -> SingleValueMapper<u32>;
+
+    #[only_owner]
+    #[endpoint(setTotalReferralCountLimit)]
+    fn set_total_referral_count_limit(&self, total_referral_count_limit: u32) {
+        self.total_referral_count_limit().set(total_referral_count_limit);
+    }
+
+    //
+    #[view(getTotalReferralCount)]
+    #[storage_mapper("total_referral_count")]
+    fn total_referral_count(&self) -> SingleValueMapper<u32>;
 }

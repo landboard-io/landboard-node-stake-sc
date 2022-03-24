@@ -1,5 +1,6 @@
 #![no_std]
 #![feature(generic_associated_types)]
+#![feature(let_chains)]
 
 elrond_wasm::imports!();
 elrond_wasm::derive_imports!();
@@ -27,8 +28,8 @@ pub trait LandboardStaking:
         referral_activation_amount: BigUint,
         apy_increase_per_referral: u32,
         max_apy_increase_by_referral: u32,
-        referral_reward: BigUint,
         promo_increase_apy: u32,
+        total_referral_count_limit: u32,
     ) {
         require!(
             stake_token_id.is_valid_esdt_identifier(),
@@ -55,8 +56,8 @@ pub trait LandboardStaking:
             "cannot be greater than 10000"
         );
         self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
-        self.referral_reward().set(&referral_reward);
         self.promo_increase_apy().set(promo_increase_apy);
+        self.total_referral_count_limit().set(total_referral_count_limit);
     }
 
     #[payable("*")]
@@ -92,8 +93,8 @@ pub trait LandboardStaking:
         if !self.staker_addresses().contains(&caller) {
             self.staker_addresses().insert(caller.clone());
 
-            // if referrer_address is given, store it
-            if let OptionalValue::Some(referrer_address) = opt_referrer_address {
+            // if referrer_address is given and referrer_address mapper is empty, store it to referrer_address mapper
+            if let OptionalValue::Some(referrer_address) = opt_referrer_address && self.referrer_address(&caller).is_empty() {
                 require!(
                     caller != referrer_address,
                     "referrer cannot be yourself"
@@ -106,7 +107,7 @@ pub trait LandboardStaking:
         }
 
         // activate referral if the caller stakes more than referral_activation_amount and referral is not activated yet
-        if payment_amount >= self.referral_activation_amount().get() && !self.referral_activated(&caller).get() {
+        if payment_amount >= self.referral_activation_amount().get() && !self.referral_activated(&caller).get() && self.total_referral_count().get() < self.total_referral_count_limit().get() {
             let referrer_address = &self.referrer_address(&caller).get();
             let new_referred_count = self.referred_count(&referrer_address).get() + 1;
 
@@ -114,9 +115,7 @@ pub trait LandboardStaking:
                 self.referred_count(&referrer_address).set(new_referred_count);
             }
             self.referral_activated(&caller).set(true);
-
-            // send referral_reward to referrer
-            self.send().direct(&referrer_address, &self.reward_token_id().get(), 0, &self.referral_reward().get(),b"referral reward");
+            self.total_referral_count().update(|v| *v += 1u32);
 
             self.referral_activated_event(caller.clone(), referrer_address.clone(), self.blockchain().get_block_timestamp(), payment_amount.clone());
         }
@@ -338,6 +337,18 @@ pub trait LandboardStaking:
                     reward_amount
                 ))
             );
+        }
+
+        items_vec
+    }
+
+    #[view(getActivatedReferrerAddresses)]
+    fn get_activated_eferrer_addresses(&self) -> MultiValueEncoded<ManagedAddress> {
+        let mut items_vec = MultiValueEncoded::new();
+        for staker_address in self.staker_addresses().iter() {
+            if self.referral_activated(&staker_address).get() {
+                items_vec.push(self.referrer_address(&staker_address).get());
+            }
         }
 
         items_vec

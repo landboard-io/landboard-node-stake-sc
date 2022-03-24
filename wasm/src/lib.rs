@@ -10,6 +10,7 @@ elrond_wasm_node::wasm_endpoints! {
         addStakeTypes
         claim
         clearStakeTypes
+        getActivatedReferrerAddresses
         getApyIncreasePerReferral
         getLastNodeId
         getMaxApyIncreaseByReferral
@@ -20,21 +21,22 @@ elrond_wasm_node::wasm_endpoints! {
         getPromoIncreaseApy
         getReferralActivated
         getReferralActivationAmount
-        getReferralReward
         getReferredCount
         getReferrerAddress
         getRewardTokenId
         getStakeTokenId
         getStakeTypes
         getStakerAddresses
+        getTotalReferralCount
+        getTotalReferralCountLimit
         pause
         setApyIncreasePerReferral
         setMaxApyIncreaseByReferral
         setPromoIncreaseApy
         setReferralActivationAmount
-        setReferralReward
         setRewardTokenId
         setStakeTokenId
+        setTotalReferralCountLimit
         stake
         unpause
         unstake
