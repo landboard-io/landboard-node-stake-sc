@@ -170,4 +170,15 @@ pub trait StorageModule {
     fn set_referral_reward(&self, referral_reward: BigUint) {
         self.referral_reward().set(referral_reward);
     }
+
+    //
+    #[view(getPromoIncreaseApy)]
+    #[storage_mapper("promo_increase_apy")]
+    fn promo_increase_apy(&self) -> SingleValueMapper<u32>;
+
+    #[only_owner]
+    #[endpoint(setPromoIncreaseApy)]
+    fn set_promo_increase_apy(&self, promo_increase_apy: u32) {
+        self.promo_increase_apy().set(promo_increase_apy);
+    }
 }

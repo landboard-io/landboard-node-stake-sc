@@ -27,7 +27,8 @@ pub trait LandboardStaking:
         referral_activation_amount: BigUint,
         apy_increase_per_referral: u32,
         max_apy_increase_by_referral: u32,
-        referral_reward: BigUint
+        referral_reward: BigUint,
+        promo_increase_apy: u32,
     ) {
         require!(
             stake_token_id.is_valid_esdt_identifier(),
@@ -55,6 +56,7 @@ pub trait LandboardStaking:
         );
         self.max_apy_increase_by_referral().set(max_apy_increase_by_referral);
         self.referral_reward().set(&referral_reward);
+        self.promo_increase_apy().set(promo_increase_apy);
     }
 
     #[payable("*")]
@@ -90,6 +92,7 @@ pub trait LandboardStaking:
         if !self.staker_addresses().contains(&caller) {
             self.staker_addresses().insert(caller.clone());
 
+            // if referrer_address is given, store it
             if let OptionalValue::Some(referrer_address) = opt_referrer_address {
                 require!(
                     caller != referrer_address,
@@ -102,6 +105,7 @@ pub trait LandboardStaking:
             }
         }
 
+        // activate referral if the caller stakes more than referral_activation_amount and referral is not activated yet
         if payment_amount >= self.referral_activation_amount().get() && !self.referral_activated(&caller).get() {
             let referrer_address = &self.referrer_address(&caller).get();
             let new_referred_count = self.referred_count(&referrer_address).get() + 1;
@@ -271,7 +275,14 @@ pub trait LandboardStaking:
         let stake_type = &stake_node.stake_type;
 
     
-        let apy = stake_type.apy + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
+        let mut apy = stake_type.apy + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
+
+        // if referral is activated, it means caller used promo and staked more than referral_activate_amount
+        // apy will be increased by promo_increase_apy
+        if self.referral_activated(&caller).get() {
+            apy += self.promo_increase_apy().get();
+        }
+
         let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.locking_timestamp, apy);
 
         // if it's before locking_timestamp, charge tax to reward
