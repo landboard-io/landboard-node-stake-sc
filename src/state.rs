@@ -4,6 +4,7 @@ elrond_wasm::derive_imports!();
 
 #[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone)]
 pub struct StakeType<M: ManagedTypeApi> {
+    pub stake_type_id: usize,
     pub locking_timestamp: u64,     // timestamp for locking staked tokens
     pub delegation_timestamp: u64,  // interval between unstaking and claimable state
     pub min_stake_limit: BigUint<M>,

@@ -51,7 +51,9 @@ pub trait StorageModule {
                 "tax cannot be greater than TOTAL_PERCENTAGE 1000"
             );
 
+            let stake_type_id = self.stake_types().len() + 1;
             let new_stake_type = StakeType {
+                stake_type_id,
                 locking_timestamp,
                 delegation_timestamp,
                 min_stake_limit,
