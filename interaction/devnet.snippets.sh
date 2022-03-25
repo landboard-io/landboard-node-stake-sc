@@ -211,3 +211,7 @@ getMaxApyIncreaseByReferral() {
 getReferralReward() {
     erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getReferralReward"
 }
+
+getApyOfStaker() {
+    erdpy --verbose contract query ${ADDRESS} --proxy=${PROXY} --function="getApyOfStaker" --arguments ${CALLER_ADDRESS_HEX} 1
+}

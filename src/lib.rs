@@ -275,13 +275,7 @@ pub trait LandboardStaking:
         let stake_type = &stake_node.stake_type;
 
     
-        let mut apy = stake_type.apy + self.referred_count(&caller).get() * self.apy_increase_per_referral().get();
-
-        // if referral is activated, it means caller used promo and staked more than referral_activate_amount
-        // apy will be increased by promo_increase_apy
-        if self.referral_activated(&caller).get() {
-            apy += self.promo_increase_apy().get();
-        }
+        let apy = self.get_apy_of_staker(&caller, stake_node.node_id);
 
         let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.locking_timestamp, apy);
 
@@ -317,11 +311,29 @@ pub trait LandboardStaking:
 
     /// view
     
+    #[view(getApyOfStaker)]
+    fn get_apy_of_staker(
+        &self,
+        caller: &ManagedAddress,
+        stake_node_id: usize,
+    ) -> u32  {
+        let stake_node = self.nodes(caller, stake_node_id).get();
+        let mut apy = stake_node.stake_type.apy + self.referred_count(caller).get() * self.apy_increase_per_referral().get();
+
+        // if referral is activated, it means caller used promo and staked more than referral_activate_amount
+        // apy will be increased by promo_increase_apy
+        if self.referral_activated(caller).get() {
+            apy += self.promo_increase_apy().get();
+        }
+
+        apy
+    }
+    
     #[view(getNodesPerStaker)]
     fn get_nodes_per_staker(
         &self,
         staker_address: ManagedAddress
-    ) -> MultiValueEncoded<MultiValue7<usize, usize, BigUint, u64, u64, bool, BigUint>> {
+    ) -> MultiValueEncoded<MultiValue10<usize, usize, BigUint, u64, u64, bool, bool, BigUint, u64, u64>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&staker_address).iter() {
             let stake_node = self.nodes(&staker_address, node_id).get();
@@ -329,14 +341,17 @@ pub trait LandboardStaking:
             let (claimable, reward_amount) = self.get_claimable_and_reward(&stake_node);
 
             items_vec.push(
-                MultiValue7::from((
+                MultiValue10::from((
                     stake_node.node_id,
                     stake_node.stake_type.stake_type_id,
                     stake_node.stake_amount,
                     stake_node.stake_timestamp,
                     stake_node.stake_type.locking_timestamp,
                     claimable,
-                    reward_amount
+                    stake_node.unstaked,
+                    reward_amount,
+                    stake_node.unstake_timestamp,
+                    stake_node.stake_type.delegation_timestamp,
                 ))
             );
         }
