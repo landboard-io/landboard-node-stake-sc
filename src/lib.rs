@@ -12,7 +12,8 @@ mod event;
 use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
-const DAY_IN_SECONDS: u64 = 3600 * 24;
+// const DAY_IN_SECONDS: u64 = 3600 * 24;
+const DAY_IN_SECONDS: u64 = 1;
 const YEAR_IN_DAYS: u64 = 365;
 
 #[elrond_wasm::derive::contract]
@@ -320,7 +321,7 @@ pub trait LandboardStaking:
     fn get_nodes_per_staker(
         &self,
         staker_address: ManagedAddress
-    ) -> MultiValueEncoded<MultiValue6<usize, BigUint, u64, u64, bool, BigUint>> {
+    ) -> MultiValueEncoded<MultiValue7<usize, usize, BigUint, u64, u64, bool, BigUint>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&staker_address).iter() {
             let stake_node = self.nodes(&staker_address, node_id).get();
@@ -328,8 +329,9 @@ pub trait LandboardStaking:
             let (claimable, reward_amount) = self.get_claimable_and_reward(&stake_node);
 
             items_vec.push(
-                MultiValue6::from((
+                MultiValue7::from((
                     stake_node.node_id,
+                    stake_node.stake_type.stake_type_id,
                     stake_node.stake_amount,
                     stake_node.stake_timestamp,
                     stake_node.stake_type.locking_timestamp,
