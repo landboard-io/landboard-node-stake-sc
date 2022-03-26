@@ -59,7 +59,7 @@ addStakeTypes() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="addStakeTypes" \
-    --arguments 1 1 100000000000000000000 5000 5000 30 30 100000000000000000000 5000 10000 \
+    --arguments 60 60 100000000000000000000 5000 5000 30 30 100000000000000000000 5000 10000 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
