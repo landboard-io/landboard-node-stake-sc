@@ -147,7 +147,7 @@ pub trait LandboardStaking:
             stake_amount: payment_amount.clone(),
             stake_timestamp: self.blockchain().get_block_timestamp(),
             
-            unstaked: false,
+            state: 1,    // not-unstakable
             reward_amount: BigUint::zero(),
             unstake_timestamp: 0u64,
         };
@@ -179,13 +179,13 @@ pub trait LandboardStaking:
         let mut stake_node = self.nodes(&caller, node_id).get();
 
         require!(
-            !stake_node.unstaked,
+            stake_node.state < 3,
             "node was already unstaked"
         );
 
         let (_, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
 
-        stake_node.unstaked = true;
+        stake_node.state = 3;
         stake_node.reward_amount = reward_amount.clone();
         stake_node.unstake_timestamp = self.blockchain().get_block_timestamp();
         
@@ -214,7 +214,7 @@ pub trait LandboardStaking:
         let stake_node = self.nodes(&caller, node_id).get();
 
         require!(
-            stake_node.unstaked,
+            stake_node.state >= 3,
             "not claimable - node is not unstaked"
         );
         require!(
@@ -347,41 +347,27 @@ pub trait LandboardStaking:
     fn get_nodes_per_staker(
         &self,
         caller: ManagedAddress
-    ) -> MultiValueEncoded<MultiValue7<u32, u32, u32, BigUint, BigUint, u64, u64>> {
+    ) -> MultiValueEncoded<StakeNode<Self::Api>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&caller).iter() {
-            let stake_node = self.nodes(&caller, node_id).get();
+            let mut stake_node = self.nodes(&caller, node_id).get();
 
-            if stake_node.unstaked {
-                items_vec.push(
-                    MultiValue7::from((
-                        stake_node.node_id,
-                        stake_node.stake_type_id,
-                        3,  // unstaked
-                        stake_node.stake_amount,
-                        stake_node.reward_amount,
-                        stake_node.unstake_timestamp,
-                        stake_node.delegation_timestamp,
-                    ))
-                );
-            } else {
+            // not unstaked
+            if stake_node.state < 3 {
                 let (claimable, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
-                let flag = match claimable {
-                    false => 1,
-                    true => 2,
+                stake_node.state = match claimable {
+                    false => 1, // not-unstakeable
+                    true => 2, // unstakeable
                 };
-                items_vec.push(
-                    MultiValue7::from((
-                        stake_node.node_id,
-                        stake_node.stake_type_id,
-                        flag,  // 1 for not-unstakeable, 2 for claimable
-                        stake_node.stake_amount,
-                        reward_amount,
-                        stake_node.stake_timestamp,
-                        stake_node.locking_timestamp,
-                    ))
-                );
-            };            
+                stake_node.reward_amount = reward_amount;
+            } else {
+                stake_node.state = if self.blockchain().get_block_timestamp() < stake_node.unstake_timestamp + stake_node.delegation_timestamp {
+                    3   // unstaked, not-claimable
+                } else {
+                    4   // claimable
+                };
+            };
+            items_vec.push(stake_node);
         }
 
         items_vec

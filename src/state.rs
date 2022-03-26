@@ -27,7 +27,7 @@ pub struct StakeNode<M: ManagedTypeApi> {
     pub stake_timestamp: u64,
 
     // if unstaked, stake_amount and reward will be undelegated for delegation_timestamp until claimable
-    pub unstaked: bool,
+    pub state: u32, // 1 for not-unstakable, 2 for unstakable, 3 for unstaked and not-claimable, 4 for claimable
     pub reward_amount: BigUint<M>,
     pub unstake_timestamp: u64,
 }
