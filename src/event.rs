@@ -8,8 +8,8 @@ pub trait EventModule {
     fn stake_event(
         &self,
         #[indexed] caller: ManagedAddress,
-        #[indexed] node_id: usize,
-        #[indexed] stake_type_id: usize,
+        #[indexed] node_id: u32,
+        #[indexed] stake_type_id: u32,
         #[indexed] stake_amount: BigUint,
         #[indexed] stake_timestamp: u64,
     );
@@ -34,7 +34,7 @@ pub trait EventModule {
     fn unstake_event(
         &self,
         #[indexed] caller: ManagedAddress,
-        #[indexed] node_id: usize,
+        #[indexed] node_id: u32,
         #[indexed] stake_amount: BigUint,
         #[indexed] stake_timestamp: u64,
         #[indexed] reward_amount: BigUint,
@@ -45,7 +45,7 @@ pub trait EventModule {
     fn claim_event(
         &self,
         #[indexed] caller: ManagedAddress,
-        #[indexed] node_id: usize,
+        #[indexed] node_id: u32,
         #[indexed] stake_amount: BigUint,
         #[indexed] stake_timestamp: u64,
         #[indexed] reward_amount: BigUint,

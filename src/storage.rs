@@ -51,7 +51,7 @@ pub trait StorageModule {
                 "tax cannot be greater than TOTAL_PERCENTAGE 1000"
             );
 
-            let stake_type_id = self.stake_types().len() + 1;
+            let stake_type_id = (self.stake_types().len() + 1) as u32;
             let new_stake_type = StakeType {
                 stake_type_id,
                 locking_timestamp,
@@ -96,15 +96,15 @@ pub trait StorageModule {
 
     #[view(getNodeIds)]
     #[storage_mapper("node_ids")]
-    fn node_ids(&self, staker_address: &ManagedAddress) -> SetMapper<usize>;
+    fn node_ids(&self, staker_address: &ManagedAddress) -> SetMapper<u32>;
 
     #[view(getLastNodeId)]
     #[storage_mapper("last_node_id")]
-    fn last_node_id(&self, staker_address: &ManagedAddress) -> SingleValueMapper<usize>;
+    fn last_node_id(&self, staker_address: &ManagedAddress) -> SingleValueMapper<u32>;
 
     #[view(getNode)]
     #[storage_mapper("nodes")]
-    fn nodes(&self, staker_address: &ManagedAddress, node_id: usize) -> SingleValueMapper<StakeNode<Self::Api>>;
+    fn nodes(&self, staker_address: &ManagedAddress, node_id: u32) -> SingleValueMapper<StakeNode<Self::Api>>;
 
     
     /// referral

@@ -67,7 +67,7 @@ pub trait LandboardStaking:
         &self,
         #[payment_token] payment_token_id: TokenIdentifier,
         #[payment_amount] payment_amount: BigUint,
-        stake_type_id: usize,
+        stake_type_id: u32,
         #[var_args] opt_referrer_address: OptionalValue<ManagedAddress>
     ) {
         self.require_activation();
@@ -77,11 +77,11 @@ pub trait LandboardStaking:
             "invalid payment_token_id"
         );
         require!(
-            0 < stake_type_id && stake_type_id <= self.stake_types().len(),
+            0 < stake_type_id && stake_type_id <= self.stake_types().len() as u32,
             "invalid stake_type_id"
         );
 
-        let stake_type = self.stake_types().get(stake_type_id);
+        let stake_type = self.stake_types().get(stake_type_id as usize);
 
         require!(
             payment_amount >= stake_type.min_stake_limit,
@@ -148,7 +148,7 @@ pub trait LandboardStaking:
     #[endpoint]
     fn unstake(
         &self,
-        node_id: usize
+        node_id: u32
     ) {
         self.require_activation();
 
@@ -183,7 +183,7 @@ pub trait LandboardStaking:
     #[endpoint]
     fn claim(
         &self,
-        node_id: usize
+        node_id: u32
     ) {
         self.require_activation();
 
@@ -312,7 +312,7 @@ pub trait LandboardStaking:
     fn get_apy_of_staker(
         &self,
         caller: &ManagedAddress,
-        stake_node_id: usize,
+        stake_node_id: u32,
     ) -> u32  {
         let stake_node = self.nodes(caller, stake_node_id).get();
         let mut apy = stake_node.stake_type.apy + self.referred_count(caller).get() * self.apy_increase_per_referral().get();
@@ -330,7 +330,7 @@ pub trait LandboardStaking:
     fn get_nodes_per_staker(
         &self,
         caller: ManagedAddress
-    ) -> MultiValueEncoded<MultiValue7<usize, usize, u32, BigUint, BigUint, u64, u64>> {
+    ) -> MultiValueEncoded<MultiValue7<u32, u32, u32, BigUint, BigUint, u64, u64>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&caller).iter() {
             let stake_node = self.nodes(&caller, node_id).get();
@@ -340,7 +340,7 @@ pub trait LandboardStaking:
                     MultiValue7::from((
                         stake_node.node_id,
                         stake_node.stake_type.stake_type_id,
-                        2,  // unstaked
+                        3,  // unstaked
                         stake_node.stake_amount,
                         stake_node.reward_amount,
                         stake_node.unstake_timestamp,
@@ -349,20 +349,22 @@ pub trait LandboardStaking:
                 );
             } else {
                 let (claimable, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
+                let flag = match claimable {
+                    false => 1,
+                    true => 2,
+                };
                 items_vec.push(
                     MultiValue7::from((
                         stake_node.node_id,
                         stake_node.stake_type.stake_type_id,
-                        claimable as u32,  // 0 for not-unstakeable, 1 for claimable
+                        flag,  // 1 for not-unstakeable, 2 for claimable
                         stake_node.stake_amount,
                         reward_amount,
                         stake_node.stake_timestamp,
                         stake_node.stake_type.locking_timestamp,
                     ))
                 );
-            };
-
-            
+            };            
         }
 
         items_vec
