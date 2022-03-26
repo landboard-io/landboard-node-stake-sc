@@ -330,31 +330,39 @@ pub trait LandboardStaking:
     fn get_nodes_per_staker(
         &self,
         caller: ManagedAddress
-    ) -> MultiValueEncoded<MultiValue10<usize, usize, BigUint, u64, u64, bool, bool, BigUint, u64, u64>> {
+    ) -> MultiValueEncoded<MultiValue7<usize, usize, u32, BigUint, BigUint, u64, u64>> {
         let mut items_vec = MultiValueEncoded::new();
         for node_id in self.node_ids(&caller).iter() {
             let stake_node = self.nodes(&caller, node_id).get();
 
-            let (claimable, reward_amount) = if stake_node.unstaked {
-                (true, stake_node.reward_amount)
+            if stake_node.unstaked {
+                items_vec.push(
+                    MultiValue7::from((
+                        stake_node.node_id,
+                        stake_node.stake_type.stake_type_id,
+                        2,  // unstaked
+                        stake_node.stake_amount,
+                        stake_node.reward_amount,
+                        stake_node.unstake_timestamp,
+                        stake_node.stake_type.delegation_timestamp,
+                    ))
+                );
             } else {
-                self.get_claimable_and_reward(&caller, stake_node.clone())
+                let (claimable, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
+                items_vec.push(
+                    MultiValue7::from((
+                        stake_node.node_id,
+                        stake_node.stake_type.stake_type_id,
+                        claimable as u32,  // 0 for not-unstakeable, 1 for claimable
+                        stake_node.stake_amount,
+                        reward_amount,
+                        stake_node.stake_timestamp,
+                        stake_node.stake_type.locking_timestamp,
+                    ))
+                );
             };
 
-            items_vec.push(
-                MultiValue10::from((
-                    stake_node.node_id,
-                    stake_node.stake_type.stake_type_id,
-                    stake_node.stake_amount,
-                    stake_node.stake_timestamp,
-                    stake_node.stake_type.locking_timestamp,
-                    claimable,
-                    stake_node.unstaked,
-                    reward_amount,
-                    stake_node.unstake_timestamp,
-                    stake_node.stake_type.delegation_timestamp,
-                ))
-            );
+            
         }
 
         items_vec

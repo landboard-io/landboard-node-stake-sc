@@ -71,6 +71,14 @@ stake() {
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
+stakeWithoutReferral() {
+    erdpy --verbose tx new --receiver ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=10000000 \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@1043561a8829300000@${STAKE_ONLY_HEX}@01" \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
 unstake() {
     erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
