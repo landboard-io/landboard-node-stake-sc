@@ -166,7 +166,7 @@ pub trait LandboardStaking:
             "node was already unstaked"
         );
 
-        let (_, reward_amount) = self.get_claimable_and_reward(&stake_node);
+        let (_, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
 
         stake_node.unstaked = true;
         stake_node.reward_amount = reward_amount.clone();
@@ -269,19 +269,16 @@ pub trait LandboardStaking:
     #[inline]
     fn get_claimable_and_reward(
         &self,
-        stake_node: &StakeNode<Self::Api>
-    ) -> (bool, BigUint) {
-        let caller = self.blockchain().get_caller();
-        let stake_type = &stake_node.stake_type;
+        caller: &ManagedAddress,
+        stake_node: StakeNode<Self::Api>
+    ) -> (bool, BigUint) {    
+        let apy = self.get_apy_of_staker(caller, stake_node.node_id);
 
-    
-        let apy = self.get_apy_of_staker(&caller, stake_node.node_id);
-
-        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_type.locking_timestamp, apy);
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_node.stake_type.locking_timestamp, apy);
 
         // if it's before locking_timestamp, charge tax to reward
-        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_type.locking_timestamp {
-            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_type.locking_timestamp) * &BigUint::from(stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_node.stake_type.locking_timestamp {
+            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_node.stake_type.locking_timestamp) * &BigUint::from(stake_node.stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
 
             return (false, reward_amount);
         }
@@ -332,13 +329,17 @@ pub trait LandboardStaking:
     #[view(getNodesPerStaker)]
     fn get_nodes_per_staker(
         &self,
-        staker_address: ManagedAddress
+        caller: ManagedAddress
     ) -> MultiValueEncoded<MultiValue10<usize, usize, BigUint, u64, u64, bool, bool, BigUint, u64, u64>> {
         let mut items_vec = MultiValueEncoded::new();
-        for node_id in self.node_ids(&staker_address).iter() {
-            let stake_node = self.nodes(&staker_address, node_id).get();
+        for node_id in self.node_ids(&caller).iter() {
+            let stake_node = self.nodes(&caller, node_id).get();
 
-            let (claimable, reward_amount) = self.get_claimable_and_reward(&stake_node);
+            let (claimable, reward_amount) = if stake_node.unstaked {
+                (true, stake_node.reward_amount)
+            } else {
+                self.get_claimable_and_reward(&caller, stake_node.clone())
+            };
 
             items_vec.push(
                 MultiValue10::from((
@@ -359,8 +360,9 @@ pub trait LandboardStaking:
         items_vec
     }
 
+
     #[view(getActivatedReferrerAddresses)]
-    fn get_activated_eferrer_addresses(&self) -> MultiValueEncoded<ManagedAddress> {
+    fn get_activated_referrer_addresses(&self) -> MultiValueEncoded<ManagedAddress> {
         let mut items_vec = MultiValueEncoded::new();
         for staker_address in self.staker_addresses().iter() {
             if self.referral_activated(&staker_address).get() {
