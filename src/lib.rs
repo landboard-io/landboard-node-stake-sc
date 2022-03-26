@@ -61,6 +61,9 @@ pub trait LandboardStaking:
         self.total_referral_count_limit().set(total_referral_count_limit);
     }
 
+    /*
+        @notice if caller and referrer_address are same, it means there is no referrer
+     */
     #[payable("*")]
     #[endpoint]
     fn stake(
@@ -108,7 +111,11 @@ pub trait LandboardStaking:
         }
 
         // activate referral if the caller stakes more than referral_activation_amount and referral is not activated yet
-        if payment_amount >= self.referral_activation_amount().get() && !self.referral_activated(&caller).get() && self.total_referral_count().get() < self.total_referral_count_limit().get() {
+        if payment_amount >= self.referral_activation_amount().get()
+            && !self.referral_activated(&caller).get()
+            && self.total_referral_count().get() < self.total_referral_count_limit().get() 
+            && !self.referrer_address(&caller).is_empty()
+        {
             let referrer_address = &self.referrer_address(&caller).get();
             let new_referred_count = self.referred_count(&referrer_address).get() + 1;
 
