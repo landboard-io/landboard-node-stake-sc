@@ -63,6 +63,24 @@ addStakeTypes() {
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
+disableStakeTypes() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="disableStakeTypes" \
+    --arguments 1 2 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+enableStakeTypes() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="enableStakeTypes" \
+    --arguments 1 2 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
 stake() {
     erdpy --verbose tx new --receiver ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \

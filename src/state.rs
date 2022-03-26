@@ -10,12 +10,19 @@ pub struct StakeType<M: ManagedTypeApi> {
     pub min_stake_limit: BigUint<M>,
     pub tax: u32,       // tax; 1000 = 10%
     pub apy: u32,       // apy; 5000 = 50%
+    pub disabled: bool, // cannot create disabled stake_type
 }
 
 #[derive(ManagedVecItem, TopEncode, TopDecode, NestedEncode, NestedDecode, TypeAbi, Clone)]
 pub struct StakeNode<M: ManagedTypeApi> {
     pub node_id: u32,
-    pub stake_type: StakeType<M>,
+
+    pub stake_type_id: u32,
+    pub locking_timestamp: u64,
+    pub delegation_timestamp: u64,
+    pub tax: u32,
+    pub apy: u32,
+
     pub stake_amount: BigUint<M>,
     pub stake_timestamp: u64,
 

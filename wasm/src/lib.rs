@@ -10,6 +10,8 @@ elrond_wasm_node::wasm_endpoints! {
         addStakeTypes
         claim
         clearStakeTypes
+        disableStakeTypes
+        enableStakeTypes
         getActivatedReferrerAddresses
         getApyIncreasePerReferral
         getApyOfStaker

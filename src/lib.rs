@@ -87,6 +87,10 @@ pub trait LandboardStaking:
         let stake_type = self.stake_types().get(stake_type_id as usize);
 
         require!(
+            !stake_type.disabled,
+            "this stake_type is disabled"
+        );
+        require!(
             payment_amount >= stake_type.min_stake_limit,
             "cannot stake less than min_stake_limit"
         );
@@ -133,7 +137,13 @@ pub trait LandboardStaking:
         self.node_ids(&caller).insert(new_node_id);
         let stake_node = StakeNode {
             node_id: new_node_id,
-            stake_type: stake_type,
+            
+            stake_type_id: stake_type.stake_type_id,
+            locking_timestamp: stake_type.locking_timestamp,
+            delegation_timestamp: stake_type.delegation_timestamp,
+            tax: stake_type.tax,
+            apy: stake_type.apy,
+
             stake_amount: payment_amount.clone(),
             stake_timestamp: self.blockchain().get_block_timestamp(),
             
@@ -208,7 +218,7 @@ pub trait LandboardStaking:
             "not claimable - node is not unstaked"
         );
         require!(
-            self.blockchain().get_block_timestamp() >= stake_node.unstake_timestamp + stake_node.stake_type.delegation_timestamp,
+            self.blockchain().get_block_timestamp() >= stake_node.unstake_timestamp + stake_node.delegation_timestamp,
             "cannot claim before delegation_timestamp"
         );
 
@@ -281,11 +291,11 @@ pub trait LandboardStaking:
     ) -> (bool, BigUint) {    
         let apy = self.get_apy_of_staker(caller, stake_node.node_id);
 
-        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_node.stake_type.locking_timestamp, apy);
+        let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_node.locking_timestamp, apy);
 
         // if it's before locking_timestamp, charge tax to reward
-        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_node.stake_type.locking_timestamp {
-            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_node.stake_type.locking_timestamp) * &BigUint::from(stake_node.stake_type.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+        if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_node.locking_timestamp {
+            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_node.locking_timestamp) * &BigUint::from(stake_node.tax) / &BigUint::from(TOTAL_PERCENTAGE);
 
             return (false, reward_amount);
         }
@@ -322,7 +332,7 @@ pub trait LandboardStaking:
         stake_node_id: u32,
     ) -> u32  {
         let stake_node = self.nodes(caller, stake_node_id).get();
-        let mut apy = stake_node.stake_type.apy + self.referred_count(caller).get() * self.apy_increase_per_referral().get();
+        let mut apy = stake_node.apy + self.referred_count(caller).get() * self.apy_increase_per_referral().get();
 
         // if referral is activated, it means caller used promo and staked more than referral_activate_amount
         // apy will be increased by promo_increase_apy
@@ -346,12 +356,12 @@ pub trait LandboardStaking:
                 items_vec.push(
                     MultiValue7::from((
                         stake_node.node_id,
-                        stake_node.stake_type.stake_type_id,
+                        stake_node.stake_type_id,
                         3,  // unstaked
                         stake_node.stake_amount,
                         stake_node.reward_amount,
                         stake_node.unstake_timestamp,
-                        stake_node.stake_type.delegation_timestamp,
+                        stake_node.delegation_timestamp,
                     ))
                 );
             } else {
@@ -363,12 +373,12 @@ pub trait LandboardStaking:
                 items_vec.push(
                     MultiValue7::from((
                         stake_node.node_id,
-                        stake_node.stake_type.stake_type_id,
+                        stake_node.stake_type_id,
                         flag,  // 1 for not-unstakeable, 2 for claimable
                         stake_node.stake_amount,
                         reward_amount,
                         stake_node.stake_timestamp,
-                        stake_node.stake_type.locking_timestamp,
+                        stake_node.locking_timestamp,
                     ))
                 );
             };            

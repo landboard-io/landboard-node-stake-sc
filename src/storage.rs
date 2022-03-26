@@ -59,8 +59,29 @@ pub trait StorageModule {
                 min_stake_limit,
                 tax,
                 apy,
+                disabled: false,
             };
             self.stake_types().push(&new_stake_type);
+        }
+    }
+
+    #[only_owner]
+    #[endpoint(disableStakeTypes)]
+    fn disable_stake_types(&self, #[var_args] stake_type_ids: MultiValueEncoded<u32>) {
+        for stake_type_id in stake_type_ids.into_iter() {
+            let mut stake_type = self.stake_types().get(stake_type_id as usize);
+            stake_type.disabled = true;
+            self.stake_types().set(stake_type_id as usize, &stake_type);
+        }
+    }
+
+    #[only_owner]
+    #[endpoint(enableStakeTypes)]
+    fn enable_stake_types(&self, #[var_args] stake_type_ids: MultiValueEncoded<u32>) {
+        for stake_type_id in stake_type_ids.into_iter() {
+            let mut stake_type = self.stake_types().get(stake_type_id as usize);
+            stake_type.disabled = false;
+            self.stake_types().set(stake_type_id as usize, &stake_type);
         }
     }
 
