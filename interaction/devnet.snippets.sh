@@ -2,14 +2,13 @@
 PROXY=https://devnet-gateway.elrond.com
 CHAIN_ID="D"
 
-WALLET="./wallets/test-wallet.pem"
-WALLET2="./wallets/test-wallet-2.pem"
+WALLET="./wallets/shard1-wallet.pem"
 
-CALLER_ADDRESS="erd1dl8ucerztz80eqtvs2u35vj5pckle3h3mnuce5fctyzxp4d74dfqwy7ntn"
+CALLER_ADDRESS="erd1ygdttzrulwfspme2s4qrx5y2qyfqalju0k2vcyy8z3979whlj9qssl5uay"
 CALLER_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 CALLER_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER_ADDRESS})"
 
-CALLER2_ADDRESS="erd1ygdttzrulwfspme2s4qrx5y2qyfqalju0k2vcyy8z3979whlj9qssl5uay"
+CALLER2_ADDRESS="erd1dl8ucerztz80eqtvs2u35vj5pckle3h3mnuce5fctyzxp4d74dfqwy7ntn"
 CALLER2_ADDRESS_HEX="0x$(erdpy wallet bech32 --decode ${CALLER2_ADDRESS})"
 CALLER2_ADDRESS_ONLY_HEX="$(erdpy wallet bech32 --decode ${CALLER2_ADDRESS})"
 
@@ -59,7 +58,34 @@ addStakeTypes() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=6000000 \
     --function="addStakeTypes" \
-    --arguments 1 1 100000000000000000000 5000 5000 30 30 100000000000000000000 5000 10000 \
+    --arguments 60 60 100000000000000000000 5000 5000 30 30 100000000000000000000 5000 10000 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+disableStakeTypes() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="disableStakeTypes" \
+    --arguments 1 2 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+enableStakeTypes() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="enableStakeTypes" \
+    --arguments 1 2 \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+changeStakeType() {
+    erdpy --verbose contract call ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=6000000 \
+    --function="changeStakeType" \
+    --arguments 1 1 1 1000000000000000000000 5000 5000 \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -68,6 +94,14 @@ stake() {
     --recall-nonce --pem=${WALLET} \
     --gas-limit=10000000 \
     --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@1043561a8829300000@${STAKE_ONLY_HEX}@01@${CALLER2_ADDRESS_ONLY_HEX}" \
+    --send --proxy=${PROXY} --chain=${CHAIN_ID}
+}
+
+stakeWithoutReferrer() {
+    erdpy --verbose tx new --receiver ${ADDRESS} \
+    --recall-nonce --pem=${WALLET} \
+    --gas-limit=10000000 \
+    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@1043561a8829300000@${STAKE_ONLY_HEX}@01" \
     --send --proxy=${PROXY} --chain=${CHAIN_ID}
 }
 
@@ -83,32 +117,6 @@ unstake() {
 claim() {
     erdpy --verbose contract call ${ADDRESS} \
     --recall-nonce --pem=${WALLET} \
-    --gas-limit=6000000 \
-    --function="claim" \
-    --arguments 1 \
-    --send --proxy=${PROXY} --chain=${CHAIN_ID}
-}
-
-stake2() {
-    erdpy --verbose tx new --receiver ${ADDRESS} \
-    --recall-nonce --pem=${WALLET2} \
-    --gas-limit=20000000 \
-    --data="ESDTTransfer@${TOKEN_ID_ONLY_HEX}@056bc75e2d63100000@${STAKE_ONLY_HEX}@01@${CALLER_ADDRESS_ONLY_HEX}" \
-    --send --proxy=${PROXY} --chain=${CHAIN_ID}
-}
-
-unstake2() {
-    erdpy --verbose contract call ${ADDRESS} \
-    --recall-nonce --pem=${WALLET2} \
-    --gas-limit=6000000 \
-    --function="unstake" \
-    --arguments 1 \
-    --send --proxy=${PROXY} --chain=${CHAIN_ID}
-}
-
-claim2() {
-    erdpy --verbose contract call ${ADDRESS} \
-    --recall-nonce --pem=${WALLET2} \
     --gas-limit=6000000 \
     --function="claim" \
     --arguments 1 \

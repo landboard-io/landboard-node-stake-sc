@@ -86,6 +86,23 @@ pub trait StorageModule {
     }
 
     #[only_owner]
+    #[endpoint(changeStakeType)]
+    fn change_stake_type(&self, stake_type_id: u32, locking_timestamp: u64, delegation_timestamp: u64, min_stake_limit: BigUint, tax: u32, apy: u32) {
+        require!(
+            !self.stake_types().item_is_empty(stake_type_id as usize),
+            "stake_type_id does not exist"
+        );
+
+        let mut stake_type = self.stake_types().get(stake_type_id as usize);
+        stake_type.locking_timestamp = locking_timestamp;
+        stake_type.delegation_timestamp = delegation_timestamp;
+        stake_type.min_stake_limit = min_stake_limit;
+        stake_type.tax = tax;
+        stake_type.apy = apy;
+        self.stake_types().set(stake_type_id as usize, &stake_type);
+    }
+
+    #[only_owner]
     #[endpoint(clearStakeTypes)]
     fn clear_stake_types(&self) {
         self.stake_types().clear();
