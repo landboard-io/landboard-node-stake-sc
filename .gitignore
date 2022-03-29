@@ -10,3 +10,4 @@ output*
 deploy-devnet.interaction.json
 erdpy.data-storage.json
 expanded.rs
+upgrade.json

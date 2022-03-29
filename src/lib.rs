@@ -13,7 +13,7 @@ use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
 // const DAY_IN_SECONDS: u64 = 3600 * 24;
-const DAY_IN_SECONDS: u64 = 1;
+const DAY_IN_SECONDS: u64 = 60;
 const YEAR_IN_DAYS: u64 = 365;
 
 #[elrond_wasm::derive::contract]
@@ -183,7 +183,7 @@ pub trait LandboardStaking:
             "node was already unstaked"
         );
 
-        let (_, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
+        let (_, reward_amount) = self.get_claimable_and_reward(&caller, node_id);
 
         stake_node.state = 3;
         stake_node.reward_amount = reward_amount.clone();
@@ -283,19 +283,23 @@ pub trait LandboardStaking:
 
     /// private
 
-    #[inline]
+    #[view(getClaimableAndReward)]
     fn get_claimable_and_reward(
         &self,
         caller: &ManagedAddress,
-        stake_node: StakeNode<Self::Api>
-    ) -> (bool, BigUint) {    
+        stake_node_id: u32,
+    ) -> (bool, BigUint) {
+        let stake_node = self.nodes(caller, stake_node_id).get();
         let apy = self.get_apy_of_staker(caller, stake_node.node_id);
 
         let mut reward_amount = self.calculate_reward(stake_node.stake_amount.clone(), stake_node.locking_timestamp, apy);
 
         // if it's before locking_timestamp, charge tax to reward
         if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_node.locking_timestamp {
-            reward_amount = reward_amount * &BigUint::from(self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / &BigUint::from(stake_node.locking_timestamp) * &BigUint::from(stake_node.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+            let elapsped_days = (self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / DAY_IN_SECONDS;
+            let locking_days = stake_node.locking_timestamp / DAY_IN_SECONDS;
+
+            reward_amount = reward_amount * &BigUint::from(elapsped_days) / &BigUint::from(locking_days) * &BigUint::from(TOTAL_PERCENTAGE - stake_node.tax) / &BigUint::from(TOTAL_PERCENTAGE);
 
             return (false, reward_amount);
         }
@@ -309,11 +313,10 @@ pub trait LandboardStaking:
     fn calculate_reward(
         &self,
         base_amount: BigUint,
-        locking_timestamp: u64,
+        reward_available_interval: u64,
         apy: u32
     ) -> BigUint {
-        let days = locking_timestamp / DAY_IN_SECONDS;
-        base_amount * &BigUint::from(apy) * &BigUint::from(days) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_DAYS)
+        base_amount * &BigUint::from(apy) * &BigUint::from(reward_available_interval) / &BigUint::from(TOTAL_PERCENTAGE) / &BigUint::from(YEAR_IN_DAYS * DAY_IN_SECONDS)
     }
 
     fn require_activation(&self) {
@@ -354,7 +357,7 @@ pub trait LandboardStaking:
 
             // not unstaked
             if stake_node.state < 3 {
-                let (claimable, reward_amount) = self.get_claimable_and_reward(&caller, stake_node.clone());
+                let (claimable, reward_amount) = self.get_claimable_and_reward(&caller, node_id);
                 stake_node.state = match claimable {
                     false => 1, // not-unstakeable
                     true => 2, // unstakeable

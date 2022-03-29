@@ -16,6 +16,7 @@ elrond_wasm_node::wasm_endpoints! {
         getActivatedReferrerAddresses
         getApyIncreasePerReferral
         getApyOfStaker
+        getClaimableAndReward
         getLastNodeId
         getMaxApyIncreaseByReferral
         getNode
