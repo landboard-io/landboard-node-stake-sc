@@ -12,8 +12,8 @@ mod event;
 use crate::state::StakeNode;
 
 const TOTAL_PERCENTAGE: u32 = 10000; // 100%
-// const DAY_IN_SECONDS: u64 = 3600 * 24;
-const DAY_IN_SECONDS: u64 = 60;
+const DAY_IN_SECONDS: u64 = 3600 * 24;
+// const DAY_IN_SECONDS: u64 = 60;
 const YEAR_IN_DAYS: u64 = 365;
 
 #[elrond_wasm::derive::contract]
