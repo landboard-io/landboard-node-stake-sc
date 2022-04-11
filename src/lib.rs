@@ -188,6 +188,11 @@ pub trait LandboardStaking:
         stake_node.state = 3;
         stake_node.reward_amount = reward_amount.clone();
         stake_node.unstake_timestamp = self.blockchain().get_block_timestamp();
+
+        // if locking_timestamp is passed, delegation_timestamp will be 0 and node can be claimed anytime
+        if stake_node.stake_timestamp + stake_node.locking_timestamp <= stake_node.unstake_timestamp {
+            stake_node.delegation_timestamp = 0;
+        }
         
         self.unstake_event(caller.clone(), node_id, stake_node.stake_amount.clone(), stake_node.stake_timestamp, reward_amount, self.blockchain().get_block_timestamp());
 
@@ -296,10 +301,7 @@ pub trait LandboardStaking:
 
         // if it's before locking_timestamp, charge tax to reward
         if self.blockchain().get_block_timestamp() < stake_node.stake_timestamp + stake_node.locking_timestamp {
-            let elapsped_days = (self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / DAY_IN_SECONDS;
-            let locking_days = stake_node.locking_timestamp / DAY_IN_SECONDS;
-
-            reward_amount = reward_amount * &BigUint::from(elapsped_days) / &BigUint::from(locking_days) * &BigUint::from(TOTAL_PERCENTAGE - stake_node.tax) / &BigUint::from(TOTAL_PERCENTAGE);
+            reward_amount = reward_amount * (self.blockchain().get_block_timestamp() - stake_node.stake_timestamp) / stake_node.locking_timestamp * (TOTAL_PERCENTAGE - stake_node.tax) / TOTAL_PERCENTAGE;
 
             return (false, reward_amount);
         }
